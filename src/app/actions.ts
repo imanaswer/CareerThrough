@@ -27,7 +27,7 @@ import { answersByPrompt, nextInterviewerTurn } from "@/lib/interview/conductor"
 import { computeImpact } from "@/lib/impact";
 import { SCORING_VERSION } from "@/lib/adaptive";
 import { matchJobs } from "@/lib/matching";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 
 export type ActionResult =
   | { error: string; values?: Record<string, string>; needsConfirmation?: boolean }
@@ -57,9 +57,43 @@ export async function signIn(_: ActionResult | null, form: FormData): Promise<Ac
   redirect(safeNext(form.get("next")));
 }
 
+/**
+ * Email confirmation is off by default: an account is usable the moment it is made.
+ *
+ * Supabase's built-in sender allows only a few messages an hour, so relying on it left
+ * real people with an account they could not sign in to. Creating the user with the
+ * service role marks the address confirmed and sends nothing, which is the same
+ * behaviour as turning "Confirm email" off in Supabase, decided in code instead.
+ *
+ * Set AUTH_REQUIRE_EMAIL_CONFIRMATION=true (once a real SMTP sender is configured) to
+ * go back to verifying addresses before letting anyone in.
+ */
+function emailConfirmationRequired() {
+  return process.env.AUTH_REQUIRE_EMAIL_CONFIRMATION === "true";
+}
+
 export async function signUp(_: ActionResult | null, form: FormData): Promise<ActionResult> {
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  if (!emailConfirmationRequired()) {
+    const created = await supabaseAdmin().auth.admin.createUser({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      email_confirm: true,
+    });
+    if (created.error) {
+      return {
+        error: /already been registered|already exists/i.test(created.error.message)
+          ? "An account with this email already exists. Sign in instead."
+          : created.error.message,
+      };
+    }
+    const session = await (await supabaseServer()).auth.signInWithPassword(parsed.data);
+    if (session.error) return { error: "Your account was created. Please sign in with it." };
+    redirect(safeNext(form.get("next")));
+  }
+
   const supabase = await supabaseServer();
   const { data, error } = await supabase.auth.signUp({
     ...parsed.data,

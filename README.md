@@ -70,7 +70,9 @@ npm run db:migrate
 npm run dev                # http://localhost:3000
 ```
 
-One manual step in the Supabase dashboard: under **Auth → URL Configuration**, add `http://localhost:3000/auth/callback` to the redirect URLs (and your deployed address later). Without it, email confirmation links don't return to the app.
+**Email confirmation is off.** A new account works the moment it is created, because Supabase's built-in sender allows only a few messages an hour and left real people locked out of accounts they had just made. Sign-up creates the user with the service role and marks the address confirmed, which is what turning off "Confirm email" in Supabase does, decided in code so it travels with the repo.
+
+Nobody's email address is verified under this setting. Before a real student cohort, configure an SMTP sender in Supabase (Auth → Emails → SMTP Settings), then set `AUTH_REQUIRE_EMAIL_CONFIRMATION=true` to go back to verifying addresses. At that point add `<your site>/auth/callback` to Supabase's redirect URLs (Auth → URL Configuration), or confirmation links will not return to the app.
 
 ---
 
