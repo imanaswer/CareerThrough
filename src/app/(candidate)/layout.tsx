@@ -69,7 +69,7 @@ export default async function CandidateLayout({ children }: { children: ReactNod
       </header>
 
       <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:py-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-[1560px]">{children}</div>
       </main>
     </div>
   );
