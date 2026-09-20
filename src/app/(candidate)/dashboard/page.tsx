@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeCheck, ClipboardCheck, FolderCheck, Lock, LockOpen, Target, TrendingUp } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, FolderCheck, LockOpen, Target, TrendingUp } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { Chip, EmptyState, Gauge, Panel } from "@/components/bits";
@@ -65,6 +65,12 @@ export default async function DashboardPage() {
   const nextBand = role.bands.find((b) => b.min > readiness.score);
   const baselineScore = snapshots.find((s) => s.trigger.startsWith("baseline"))?.score;
   const stale = readiness.perSkill.filter((p) => p.reassessRecommended);
+  // Several snapshots often land on one day, which would repeat the same axis label.
+  const days = new Set(snapshots.map((s) => new Date(s.createdAt).toDateString()));
+  const trend = snapshots.map((s) => ({
+    date: new Date(s.createdAt).toLocaleString("en-IN", days.size > 1 ? { day: "numeric", month: "short" } : { hour: "numeric", minute: "2-digit" }),
+    score: s.score,
+  }));
   const zeroStart = readiness.score === 0;
 
   return (
@@ -229,7 +235,7 @@ export default async function DashboardPage() {
           <Panel title="Progress">
             {snapshots.length > 1 ? (
               <>
-                <ReadinessTrend data={snapshots.map((s) => ({ date: new Date(s.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }), score: s.score }))} />
+                <ReadinessTrend data={trend} />
                 <dl className="mt-3 space-y-1.5 text-sm">
                   {baselineScore !== undefined ? (
                     <div className="flex justify-between gap-2">
