@@ -1,10 +1,16 @@
-import { LinkArrow } from "@/components/pending";
 import Link from "next/link";
-import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { Chip } from "@/components/bits";
+import { HeroButtons } from "@/components/hero-buttons";
+import { FluidBackground } from "@/components/fluid-background";
+import { TiltCard } from "@/components/tilt-card";
+import { CinematicText } from "@/components/cinematic-text";
+import { ScrollReveal } from "@/components/scroll-reveal";
+import { EvidenceScaleAccordion } from "@/components/evidence-scale-accordion";
+import { CtaSection } from "@/components/cta-section";
 import { ROLES } from "@/content/roles";
 import { skillName } from "@/content/skills";
 import { jobsForRole } from "@/content/jobs";
@@ -22,80 +28,133 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <main>
-        <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 sm:px-6 sm:pt-24">
-          <Chip className="bg-secondary text-secondary-foreground ring-transparent">Not a course platform</Chip>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
-            Choose the role.
-            <br />
-            Prove you&apos;re ready.
-            <br />
-            <span className="bg-gradient-to-r from-primary to-fuchsia-600 bg-clip-text text-transparent">Get access to opportunities.</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Career Through turns a career goal into verified employability. Know how ready you are for a specific job, why, what to fix next, and which opportunities it unlocks.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="#roles" className={cn(buttonVariants(), "h-11 px-6 text-base")}>
-              Explore roles <LinkArrow />
-            </Link>
-            <Link href="#how" className={cn(buttonVariants({ variant: "outline" }), "h-11 px-6 text-base")}>How it works</Link>
+      <main className="relative flex flex-col items-center overflow-clip selection:bg-primary/30">
+        
+        {/* Background Effects */}
+        <FluidBackground />
+        <div className="hero-glow" />
+        <div className="absolute top-0 -z-10 h-[100vh] w-full bg-[radial-gradient(ellipse_at_top_center,oklch(0.65_0.25_290/0.15),transparent_50%)]" />
+
+        {/* HERO SECTION */}
+        <section className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col justify-center px-4 pt-24 sm:px-6">
+          <div className="flex flex-col items-start gap-6">
+            <Chip className="border-foreground/10 bg-foreground/5 backdrop-blur-md text-foreground">Not a course platform</Chip>
+            
+            <h1 className="flex max-w-4xl flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-7xl md:text-8xl">
+              <CinematicText text="Choose the role." delay={2.2} />
+              <CinematicText text="Prove you're ready." className="opacity-50" delay={2.6} />
+              <CinematicText text="Get opportunities." className="text-gradient-primary font-semibold" delay={3.0} />
+            </h1>
+            
+            <p className="mt-4 max-w-2xl text-lg font-light text-muted-foreground sm:text-xl">
+              Career Through turns a career goal into verified employability. Stop guessing what you need. Know how ready you are, what to fix next, and the exact opportunities it unlocks.
+            </p>
+            
+            <HeroButtons />
+            
+            <div className="mt-12 flex items-center gap-3 rounded-full border border-foreground/5 bg-foreground/5 px-4 py-2 text-sm text-muted-foreground backdrop-blur-sm">
+              <ShieldCheck className="size-4 text-primary" aria-hidden />
+              <span>Evidence before claims. Every score is explainable and traceable.</span>
+            </div>
           </div>
-          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <ShieldCheck className="size-4 text-primary" aria-hidden />
-            Evidence before claims. Every score is explainable and traceable.
-          </p>
         </section>
 
-        <section id="roles" className="scroll-mt-20 border-y bg-muted/40 py-16">
+        {/* ROLES SECTION */}
+        <section id="roles" className="relative w-full scroll-mt-20 py-32">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="text-2xl font-semibold tracking-tight">Pick your target role</h2>
-            <p className="mt-1 text-muted-foreground">Five complete role tracks. Each has its own skills, targets, assessments and opportunities.</p>
-            <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {ROLES.map((role) => {
+            <div className="flex flex-col items-center text-center">
+              <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-5xl">Pick your target role</h2>
+              <p className="mt-4 max-w-xl text-muted-foreground">Five complete role tracks. Each has its own skills, targets, assessments and opportunities.</p>
+            </div>
+            
+            <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {ROLES.map((role, index) => {
                 const jobs = jobsForRole(role.id);
                 const core = role.skills.filter((s) => s.priority === "critical");
                 return (
-                  <article key={role.id} className="card-soft flex flex-col p-6 transition-shadow hover:shadow-lg">
-                    <h3 className="text-lg font-semibold">{role.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{role.tagline}</p>
-                    <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Critical skills</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {core.map((s) => <Chip key={s.skillId} className="bg-background ring-border">{skillName(s.skillId)}</Chip>)}
+                  <ScrollReveal key={role.id} index={index}>
+                    <TiltCard className="card-soft group flex flex-col p-8">
+                      <h3 className="text-2xl font-medium text-foreground">{role.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{role.tagline}</p>
+                    
+                    <div className="mt-8">
+                      <p className="text-xs font-medium uppercase tracking-widest text-primary">Critical Skills</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {core.map((s) => (
+                          <span key={s.skillId} className="rounded-md border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs text-foreground/80">
+                            {skillName(s.skillId)}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <dl className="mt-4 space-y-1.5 text-sm">
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Assessed on</dt><dd className="text-right">{role.skills.length} skills · 4 dimensions</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Sample opportunities</dt><dd className="text-right">{jobs.slice(0, 2).map((j) => j.title).join(", ")}</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Typical journey</dt><dd className="text-right">{role.journeyEstimate.split(" from")[0]}</dd></div>
-                    </dl>
-                    <Link href={`/roles/${role.slug}`} className={cn(buttonVariants({ variant: "secondary" }), "mt-6 h-10 w-full")}>
-                      View role <LinkArrow />
+                    
+                    <div className="mt-8 flex-1 space-y-3 border-t border-foreground/10 pt-6 text-sm">
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Assessed on</span><span className="text-right text-foreground/90">{role.skills.length} skills</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Sample Jobs</span><span className="text-right text-foreground/90">{jobs.slice(0, 1).map((j) => j.title).join(", ")} +more</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Typical journey</span><span className="text-right text-foreground/90">{role.journeyEstimate.split(" from")[0]}</span></div>
+                    </div>
+                    
+                    <Link href={`/roles/${role.slug}`} className="relative z-10 mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-foreground/10 font-medium text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      View full track
                     </Link>
-                  </article>
+                    </TiltCard>
+                  </ScrollReveal>
                 );
               })}
             </div>
           </div>
         </section>
 
-        <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
-          <h2 className="text-2xl font-semibold tracking-tight">One loop, from goal to opportunity</h2>
-          <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {STEPS.map(({ icon: Icon, title, body }, i) => (
-              <li key={title} className="rounded-2xl border p-5">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-9 place-items-center rounded-xl bg-secondary text-primary"><Icon className="size-4" aria-hidden /></span>
-                  <span className="text-xs font-medium text-muted-foreground">Step {i + 1}</span>
-                </div>
-                <h3 className="mt-3 font-semibold">{title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-              </li>
-            ))}
-          </ol>
+        {/* PROCESS SECTION */}
+        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-32">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+          
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mb-16 md:w-1/2">
+              <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-5xl">One continuous loop.</h2>
+              <p className="mt-4 text-lg text-muted-foreground">From setting a goal to landing the opportunity, everything is connected and evidence-based.</p>
+            </div>
+            
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {STEPS.map(({ icon: Icon, title, body }, i) => (
+                <ScrollReveal key={title} index={i}>
+                  <div className="card-soft flex h-full flex-col p-8">
+                    <div className="flex items-center gap-4">
+                      <div className="grid size-12 place-items-center rounded-full bg-primary/20 text-primary ring-1 ring-primary/30">
+                        <Icon className="size-5" aria-hidden />
+                      </div>
+                      <span className="font-mono text-sm text-muted-foreground">0{i + 1}</span>
+                    </div>
+                    <h3 className="mt-6 text-xl font-medium text-foreground">{title}</h3>
+                    <p className="mt-3 leading-relaxed text-muted-foreground">{body}</p>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
         </section>
+
+        {/* REDESIGNED SCORE SECTION - ACCORDION */}
+        <EvidenceScaleAccordion />
+
+        {/* REDESIGNED CTA SECTION - EDITORIAL GRID */}
+        <CtaSection />
+
       </main>
-      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-        Career Through · Opportunities shown in this version are sample listings used to demonstrate readiness-based matching.
+      
+      {/* PREMIUM CINEMATIC FOOTER - SINGLE LINE */}
+      <footer className="relative w-full bg-background py-8 overflow-hidden">
+        {/* Glowing top border */}
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
+        
+        {/* Subtle background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[100px] bg-primary/5 blur-[50px] rounded-full pointer-events-none" />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 flex justify-center text-center">
+          <p className="text-[11px] sm:text-xs font-mono tracking-widest text-foreground/40 hover:text-foreground/60 transition-colors duration-300">
+            Career Through &middot; Openings shown here are sample listings used to demonstrate readiness-based matching &middot; Content 2026.09.1
+          </p>
+        </div>
       </footer>
     </>
   );

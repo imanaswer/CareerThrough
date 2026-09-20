@@ -9,9 +9,9 @@ import { EvidenceLine } from "./skill-row";
 import { Why } from "./why";
 
 const PRIORITY_CHIP = {
-  critical: "bg-rose-50 text-rose-700 ring-rose-200",
-  important: "bg-amber-50 text-amber-800 ring-amber-200",
-  nice: "bg-muted text-muted-foreground ring-border",
+  critical: "bg-primary/20 text-primary ring-primary/30",
+  important: "bg-foreground/10 text-foreground ring-foreground/20",
+  nice: "bg-foreground/5 text-muted-foreground ring-foreground/10",
 };
 
 const DOTS = { none: 0, low: 1, medium: 2, strong: 3 } as const;
@@ -39,15 +39,15 @@ export function SkillCard({ skill, evidence, formulaVersion }: { skill: SkillRea
   const distance = Math.max(-skill.gap, 0);
 
   return (
-    <article className="rounded-2xl border p-4 transition-colors hover:border-primary/30 hover:bg-muted/30">
+    <article className="card-soft p-5 transition-colors hover:border-primary/50 hover:bg-foreground/10">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0">
-          <h3 className="flex flex-wrap items-center gap-2 font-medium">
+          <h3 className="flex flex-wrap items-center gap-2 font-medium text-foreground">
             {skill.name}
             <Chip className={PRIORITY_CHIP[skill.priority]}>{PRIORITY_LABELS[skill.priority].toUpperCase()}</Chip>
           </h3>
           <p className="mt-1 flex items-baseline gap-1.5 text-sm">
-            <span className="text-xl font-semibold tabular-nums">{skill.level}%</span>
+            <span className="text-xl font-semibold tabular-nums text-foreground">{skill.level}%</span>
             <span className="text-muted-foreground">/ {skill.target}% target</span>
           </p>
         </div>
@@ -105,15 +105,15 @@ export function SkillCard({ skill, evidence, formulaVersion }: { skill: SkillRea
         </p>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-foreground/10 pt-4">
         <Why label="View evidence" title={skill.name} description={skill.explanation}>
-          <dl className="grid grid-cols-2 gap-3 rounded-xl bg-muted/60 p-3 text-xs">
+          <dl className="grid grid-cols-2 gap-3 rounded-xl bg-foreground/5 border border-foreground/10 p-4 text-xs">
             <div><dt className="text-muted-foreground">Current level</dt><dd className="text-base font-semibold text-foreground">{skill.level}%</dd></div>
             <div><dt className="text-muted-foreground">Role target</dt><dd className="text-base font-semibold text-foreground">{skill.target}%</dd></div>
-            <div><dt className="text-muted-foreground">Adds to readiness</dt><dd className="font-medium text-foreground">{skill.contribution} of {skill.maxContribution} points</dd></div>
-            <div><dt className="text-muted-foreground">Role priority</dt><dd className="font-medium text-foreground">{PRIORITY_LABELS[skill.priority]} · weight {skill.weight}</dd></div>
+            <div><dt className="text-muted-foreground">Adds to readiness</dt><dd className="font-medium text-foreground/90">{skill.contribution} of {skill.maxContribution} points</dd></div>
+            <div><dt className="text-muted-foreground">Role priority</dt><dd className="font-medium text-foreground/90">{PRIORITY_LABELS[skill.priority]} · weight {skill.weight}</dd></div>
           </dl>
-          <div>
+          <div className="mt-4">
             <p className="mb-2 font-medium">Evidence used</p>
             {used.length ? (
               <ul className="space-y-2">{used.map((e) => <EvidenceLine key={e.id} e={e} />)}</ul>
@@ -121,7 +121,7 @@ export function SkillCard({ skill, evidence, formulaVersion }: { skill: SkillRea
               <p className="text-muted-foreground">No evidence yet. Missing evidence is never assumed to be mastery — or to be failure. It is simply unproven.</p>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-4 text-xs text-muted-foreground">
             Formula {formulaVersion}. Your level is your most recent assessed score, not your best. Levels above the target do not add extra points.
           </p>
         </Why>
