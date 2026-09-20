@@ -171,7 +171,7 @@ export const prompts: InterviewPrompt[] = [
       "A dashboard tile shows NPS by region as a bar chart. The y-axis runs from 40 to 48, each of the five bars is a different bright colour, and the tile is titled just 'NPS'. A regional manager screenshots it claiming their region is 'twice as good' as another.",
     prompt:
       "Explain which design choices produced that misreading, and say where you would push back versus where a zoomed axis is defensible.",
-    lookFor": [
+    lookFor: [
       "Identifies the truncated y-axis as exaggerating small differences",
       "Explains bars encode length from zero so they need a zero baseline, while a line chart may legitimately zoom",
       "Flags the five colours as encoding nothing, and suggests one colour with a single highlight",

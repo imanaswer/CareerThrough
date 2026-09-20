@@ -91,7 +91,7 @@ export default async function ResultPage({ params, searchParams }: { params: Pro
                 const s = score.bySkill[def.skillIds[0]]?.topics[t.id];
                 return s ? <Row key={t.id} name={t.name} pct={s.pct} sub={`${s.correct}/${s.total}`} /> : null;
               })
-            : Object.entries(score.bySkill).map(([skillId, s]) => {
+            : Object.entries(score.bySkill).map(([skillId, s]: [string, (typeof score.bySkill)[string]]) => {
                 const target = roleSkill.get(skillId)?.target ?? 0;
                 return <Row key={skillId} name={skillName(skillId)} pct={s.pct} target={target} sub={`${s.correct}/${s.total} · target ${target}%`} />;
               })}

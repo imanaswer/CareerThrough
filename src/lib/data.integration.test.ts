@@ -11,7 +11,9 @@ describe.skipIf(!url)("data layer against Postgres", () => {
     const { db, profile, evidence, readinessSnapshot, careerEvent } = await import("@/db");
     const { getRole } = await import("@/content/roles");
     const { QUESTIONS, getAssessment } = await import("@/content/assessments");
-    const { evidenceFromScore, scoreAttempt, selectQuestions } = await import("./assessment");
+    const { evidenceFromAdaptive } = await import("./attempt");
+    const { scoreAdaptive, startDifficulty } = await import("./adaptive");
+    const { selectQuestions } = await import("./assessment");
     const { getCandidateState, recordSnapshot } = await import("./data");
     const { CONTENT_VERSION } = await import("@/content/version");
 
@@ -28,18 +30,24 @@ describe.skipIf(!url)("data layer against Postgres", () => {
     // A perfect baseline, scored by the real engine.
     const def = getAssessment(`baseline:${role.id}`)!;
     const issued = selectQuestions(def, QUESTIONS, "seed");
-    const score = scoreAttempt(issued, Object.fromEntries(issued.map((q) => [q.id, q.answer])));
-    const rows = evidenceFromScore(def, score, { id: randomUUID(), verified: true, completedAt: new Date() });
+    const score = scoreAdaptive(
+      issued.map((q) => ({ question: q, choice: q.answer })),
+      startDifficulty("baseline"),
+      Object.fromEntries(def.skillIds.map((id) => [id, def.questionsPerSkill])),
+    );
+    const rows = evidenceFromAdaptive(def, score, { id: randomUUID(), verified: true, completedAt: new Date() });
     const second = await db.transaction(async (tx) => {
       await tx.insert(evidence).values(rows.map((r) => ({ ...r, userId, contentVersion: CONTENT_VERSION })));
       return recordSnapshot(tx, userId, role, "baseline:test");
     });
     expect(second.before?.score).toBe(first.after.score);
-    expect(second.after.score).toBe(100);
+    // Knowledge alone is capped: a perfect paper cannot claim industry readiness on its own.
+    expect(second.after.score).toBeLessThanOrEqual(84);
+    expect(second.after.score).toBeGreaterThan(50);
 
     const [p] = await db.select().from(profile).where(eq(profile.userId, userId));
     const state = await getCandidateState(userId, p, role);
-    expect(state.readiness.score).toBe(100);
+    expect(state.readiness.score).toBe(second.after.score);
     expect(state.snapshots).toHaveLength(2);
     expect(state.snapshots[1]).toMatchObject({ formulaVersion: "readiness-v1", contentVersion: CONTENT_VERSION });
     // No project yet → project-gated jobs stay locked, the rest unlock.

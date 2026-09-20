@@ -1,6 +1,6 @@
 import { boolean, index, integer, jsonb, pgTable, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { EvidenceItem, Readiness } from "@/lib/readiness";
-import type { AttemptScore } from "@/lib/assessment";
+import type { AdaptiveScore } from "@/lib/adaptive";
 import type { Impact } from "@/lib/impact";
 import type { ResumeData } from "@/lib/resume-schema";
 
@@ -36,7 +36,7 @@ export const attempt = pgTable(
     /** Questions issued so far. Grows as the adaptive ladder serves them. */
     questionIds: jsonb("question_ids").$type<string[]>().notNull(),
     answers: jsonb("answers").$type<Record<string, number>>(),
-    score: jsonb("score_by_skill").$type<AttemptScore>(),
+    score: jsonb("score_by_skill").$type<AdaptiveScore>(),
     /** knowledge → interview → complete. */
     stage: text("stage").$type<"knowledge" | "interview" | "complete">().notNull().default("knowledge"),
     /** Interview prompts issued for this attempt, in order. */
