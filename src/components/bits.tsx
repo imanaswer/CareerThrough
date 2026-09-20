@@ -87,7 +87,7 @@ export function StatusChip({ status }: { status: SkillStatus }) {
 }
 
 export function Chip({ className, children }: { className?: string; children: ReactNode }) {
-  return <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", className)}>{children}</span>;
+  return <span className={cn("inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", className)}>{children}</span>;
 }
 
 export function Verified({ verified }: { verified: boolean }) {

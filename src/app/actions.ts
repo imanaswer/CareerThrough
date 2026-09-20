@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { attempt, db, evidence, interviewResponse, profile } from "@/db";
 import { CONTENT_VERSION } from "@/content/version";
@@ -18,10 +18,12 @@ import { resumeSchema } from "@/lib/resume-schema";
 import { claimedSkills } from "@/lib/resume-claims";
 import { RESUME_CLAIM_CAP } from "@/lib/readiness";
 import { RETAKE_COOLDOWN_HOURS, isExpired, isVerified } from "@/lib/assessment";
-import { currentView, evidenceFromAdaptive, nextQuestion, scoreAttemptAdaptive, totalQuestions } from "@/lib/attempt";
+import { currentView, evidenceFromAdaptive, nextQuestion, scoreAttemptAdaptive } from "@/lib/attempt";
 import { countWords, selectPrompts } from "@/lib/interview/select";
 import { RUBRIC_VERSION, evaluateAnswer } from "@/lib/interview/provider";
-import { getPrompt } from "@/content/interview";
+import { analyseAnswer, type AnswerFeedback } from "@/lib/interview/feedback";
+import { getPrompt, promptsForRole, promptsForSkill } from "@/content/interview";
+import { answersByPrompt, nextInterviewerTurn } from "@/lib/interview/conductor";
 import { computeImpact } from "@/lib/impact";
 import { SCORING_VERSION } from "@/lib/adaptive";
 import { matchJobs } from "@/lib/matching";
@@ -352,6 +354,129 @@ async function finalizeAttempt(tx: Tx, userId: string, role: Role, attemptId: st
 async function getProfileTx(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userId: string) {
   const [row] = await tx.select().from(profile).where(eq(profile.userId, userId)).limit(1);
   return row;
+}
+
+// ── Conversational interview ───────────────────────────────────
+
+const turnSchema = z.object({ speaker: z.enum(["interviewer", "candidate"]), text: z.string().max(6000), promptId: z.string().max(80).optional(), probe: z.boolean().optional() });
+const conversationInput = z.object({
+  mode: z.enum(["practice", "assessment"]),
+  setId: z.string().max(80),
+  transcript: z.array(turnSchema).max(80),
+});
+
+export type ConversationTurn = { text: string; promptId?: string; probe?: boolean; done?: boolean };
+
+/** Plan the questions for a conversation. Same selection rules as the written interview. */
+async function conversationPlan(mode: "practice" | "assessment", setId: string, role: Role, userId: string) {
+  if (mode === "assessment") {
+    const [a] = await db.select().from(attempt).where(and(eq(attempt.id, setId), eq(attempt.userId, userId))).limit(1);
+    if (!a || a.stage !== "interview") return null;
+    return { promptIds: a.interviewPromptIds, attempt: a };
+  }
+  const prompts = setId === "role" ? promptsForRole(role.id) : promptsForSkill(setId);
+  return prompts.length ? { promptIds: prompts.map((p) => p.id), attempt: null } : null;
+}
+
+/**
+ * What the interviewer says next. Stateless: the transcript comes in, the next line goes
+ * out, and the decision is recomputed here rather than trusted from the browser.
+ */
+export async function interviewTurn(input: unknown): Promise<{ error: string } | ConversationTurn> {
+  const parsed = conversationInput.safeParse(input);
+  if (!parsed.success) return { error: "That interview state was not valid." };
+  const { user, profile: p, role } = await requireCandidate();
+  const plan = await conversationPlan(parsed.data.mode, parsed.data.setId, role, user.id);
+  if (!plan) return { error: "This interview is no longer open." };
+
+  const { readiness } = await liveReadiness(user.id, role);
+  return nextInterviewerTurn({
+    promptIds: plan.promptIds,
+    transcript: parsed.data.transcript,
+    candidateName: p.name,
+    roleTitle: role.title,
+    profileSkills: p.resume?.skills?.slice(0, 5),
+    weakSkills: readiness.perSkill.filter((s) => s.gap < 0).sort((a, b) => a.level / a.target - b.level / b.target).slice(0, 2).map((s) => s.name),
+  });
+}
+
+/**
+ * Store a finished conversation. In an assessment each question's answer becomes one
+ * interview response and the attempt is finalised; in practice nothing is stored.
+ */
+export async function finishInterview(input: unknown): Promise<{ error: string } | { ok: true; href: string }> {
+  const parsed = conversationInput.safeParse(input);
+  if (!parsed.success) return { error: "That interview state was not valid." };
+  const { user, role } = await requireCandidate();
+
+  if (parsed.data.mode === "practice") {
+    await logEvent(user.id, "INTERVIEW_PRACTISED", { setId: parsed.data.setId, turns: parsed.data.transcript.length });
+    return { ok: true, href: "/practice?done=1" };
+  }
+
+  const answers = answersByPrompt(parsed.data.transcript);
+  const href = await db.transaction(async (tx) => {
+    const [a] = await tx.select().from(attempt).where(and(eq(attempt.id, parsed.data.setId), eq(attempt.userId, user.id))).limit(1);
+    if (!a || a.stage !== "interview") return null;
+    const existing = await tx.select({ promptId: interviewResponse.promptId }).from(interviewResponse).where(eq(interviewResponse.attemptId, a.id));
+    const done = new Set(existing.map((r) => r.promptId));
+
+    for (const promptId of a.interviewPromptIds) {
+      if (done.has(promptId)) continue;
+      const prompt = getPrompt(promptId);
+      if (!prompt) continue;
+      const answer = (answers[promptId] ?? "").trim();
+      const words = countWords(answer);
+      const evaluated = answer ? await evaluateAnswer({ prompt, answer, words, seconds: 0 }) : null;
+      await tx.insert(interviewResponse).values({
+        userId: user.id,
+        attemptId: a.id,
+        promptId,
+        skillId: prompt.skillId ?? null,
+        roleId: role.id,
+        answer,
+        words,
+        seconds: 0,
+        // No answer means they left it unanswered, not that they failed it.
+        status: !answer ? "skipped" : evaluated?.status === "scored" ? "scored" : "pending",
+        rubric: evaluated?.status === "scored" ? evaluated.evaluation.rubric : null,
+        score: evaluated?.status === "scored" ? evaluated.evaluation.score : null,
+        feedback: evaluated?.status === "scored" ? evaluated.evaluation.feedback : null,
+        provider: evaluated?.status === "scored" ? evaluated.evaluation.provider : null,
+        model: evaluated?.status === "scored" ? evaluated.evaluation.model : null,
+        rubricVersion: RUBRIC_VERSION,
+        contentVersion: CONTENT_VERSION,
+        scoredAt: evaluated?.status === "scored" ? new Date() : null,
+      });
+    }
+    return finalizeAttempt(tx, user.id, role, a.id);
+  });
+
+  if (!href) return { error: "This interview is no longer open." };
+  revalidatePath("/", "layout");
+  return { ok: true, href };
+}
+
+// ── Interview practice ─────────────────────────────────────────
+
+const practiceInput = z.object({ promptId: z.string().max(80), answer: z.string().max(6000) });
+
+export type PracticeResult = { error: string } | { ok: true; feedback: AnswerFeedback };
+
+/**
+ * Rehearsal, not assessment: practice answers are analysed and thrown away.
+ * They create no evidence and never move readiness — only a real attempt does that.
+ */
+export async function practiceAnswer(input: unknown): Promise<PracticeResult> {
+  const parsed = practiceInput.safeParse(input);
+  if (!parsed.success) return { error: "That answer was not valid." };
+  const { user } = await requireCandidate();
+  const prompt = getPrompt(parsed.data.promptId);
+  if (!prompt) return { error: "That question could not be found." };
+  if (countWords(parsed.data.answer) < 5) return { error: "Write a little more and we'll give you feedback on it." };
+
+  await logEvent(user.id, "INTERVIEW_PRACTISED", { promptId: prompt.id, words: countWords(parsed.data.answer) });
+  return { ok: true, feedback: analyseAnswer(prompt, parsed.data.answer) };
 }
 
 // ── Plan ───────────────────────────────────────────────────────

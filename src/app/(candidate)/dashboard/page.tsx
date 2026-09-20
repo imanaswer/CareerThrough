@@ -107,7 +107,17 @@ export default async function DashboardPage() {
                 {readiness.dimensions.map((d) => (
                   <div key={d.dimension} className="flex items-center justify-between gap-2">
                     <dt className="text-muted-foreground">{DIMENSION_LABELS[d.dimension]}</dt>
-                    <dd className={cn("tabular-nums", d.pct === null && "text-xs text-muted-foreground")}>{d.pct !== null ? `${d.pct}%` : d.note}</dd>
+                    <dd className={cn("tabular-nums", d.pct === null && "text-xs text-muted-foreground")}>
+                      {d.pct !== null
+                        ? `${d.pct}%`
+                        : d.dimension === "interview"
+                          ? state.interview.average !== null
+                            ? `${state.interview.average}%`
+                            : state.interview.answered
+                              ? `${state.interview.answered} recorded, awaiting evaluation`
+                              : d.note
+                          : d.note}
+                    </dd>
                   </div>
                 ))}
               </dl>

@@ -1,6 +1,7 @@
 import "server-only";
 import type { Question, Skill } from "@/content/taxonomy";
 import { getSkill } from "@/content/skills";
+import { questionsForSkill } from "@/content/assessments";
 
 /**
  * Progressive (adaptive) question selection and scoring.
@@ -30,15 +31,21 @@ export function startDifficulty(kind: "baseline" | "skill" | "final"): number {
 }
 
 /**
- * The ceiling for an attempt: the weight you would earn by answering every question
- * correctly and climbing the whole way. Scoring against this — not against the questions
- * you happened to be asked — is what stops an easy run from producing a high score.
+ * The ceiling for an attempt: the weight a candidate would earn by answering everything
+ * correctly, walking the same ladder through the same question pool. Scoring against this
+ * — rather than against the questions you happened to be asked — is what stops an easy
+ * run from producing a high score, while still letting a genuinely strong run reach 100.
  */
-export function maxWeight(count: number, start: number): number {
+export function bestPossibleWeight(skillId: string, count: number, start: number, seed: string): number {
+  const pool = questionsForSkill(skillId);
+  const used = new Set<string>();
   let d = clamp(start);
   let total = 0;
   for (let i = 0; i < count; i++) {
-    total += WEIGHT[d];
+    const q = pickQuestion(pool, used, d, seed);
+    if (!q) break;
+    used.add(q.id);
+    total += WEIGHT[difficultyOf(q)];
     d = clamp(d + 1);
   }
   return total;
@@ -119,7 +126,12 @@ export type AdaptiveScore = {
  * Score an attempt by difficulty. Answering only the easy questions correctly earns
  * little weight against the full ladder, so a weak run cannot reach a strong score.
  */
-export function scoreAdaptive(asked: AskedAnswer[], start: number, quotaBySkill: Record<string, number>): AdaptiveScore {
+export function scoreAdaptive(
+  asked: AskedAnswer[],
+  start: number,
+  quotaBySkill: Record<string, number>,
+  seed = "",
+): AdaptiveScore {
   const bySkill: Record<string, AdaptiveSkillScore> = {};
   let correct = 0;
 
@@ -149,7 +161,7 @@ export function scoreAdaptive(asked: AskedAnswer[], start: number, quotaBySkill:
   }
 
   for (const [skillId, s] of Object.entries(bySkill)) {
-    s.possible = maxWeight(quotaBySkill[skillId] ?? s.total, start);
+    s.possible = bestPossibleWeight(skillId, quotaBySkill[skillId] ?? s.total, start, seed);
     s.pct = s.possible ? Math.min(Math.round((s.earned / s.possible) * 100), 100) : 0;
     for (const t of Object.values(s.topics)) t.pct = t.total ? Math.round((t.correct / t.total) * 100) : 0;
   }

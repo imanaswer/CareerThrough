@@ -34,6 +34,7 @@ describe.skipIf(!url)("data layer against Postgres", () => {
       issued.map((q) => ({ question: q, choice: q.answer })),
       startDifficulty("baseline"),
       Object.fromEntries(def.skillIds.map((id) => [id, def.questionsPerSkill])),
+      "seed",
     );
     const rows = evidenceFromAdaptive(def, score, { id: randomUUID(), verified: true, completedAt: new Date() });
     const second = await db.transaction(async (tx) => {
