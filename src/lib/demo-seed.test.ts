@@ -103,7 +103,7 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
     expect(plan, `no combination of results reaches exactly ${TARGET}%`).toBeDefined();
 
     // ── Write it, through the same paths the app uses ───────────────
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const admin = createClient((process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL)!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const existing = (await admin.auth.admin.listUsers()).data.users.find((u) => u.email === EMAIL);
     if (existing) {
       // Every table, or the old profile row is orphaned and the account appears twice.

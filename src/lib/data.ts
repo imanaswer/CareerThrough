@@ -19,7 +19,7 @@ export type Attempt = typeof attempt.$inferSelect;
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export const getUser = cache(async () => {
-  if (!supabaseConfigured) return null;
+  if (!supabaseConfigured()) return null;
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   return data.user;

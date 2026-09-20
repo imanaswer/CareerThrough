@@ -13,7 +13,14 @@ export async function SiteHeader() {
         <nav aria-label="Site" className="flex items-center gap-2 text-sm">
           <Link href="/#roles" className="hidden px-3 py-1.5 font-medium text-muted-foreground hover:text-foreground sm:block">Roles</Link>
           <Link href="/#how" className="hidden px-3 py-1.5 font-medium text-muted-foreground hover:text-foreground sm:block">How it works</Link>
-          <Link href={user ? "/dashboard" : "/login"} className={cn(buttonVariants(), "h-9 px-4")}>{user ? "Dashboard" : "Sign in"}</Link>
+          {user ? (
+            <Link href="/dashboard" className={cn(buttonVariants(), "h-9 px-4")}>Dashboard</Link>
+          ) : (
+            <>
+              <Link href="/login" className="px-3 py-1.5 font-medium text-muted-foreground hover:text-foreground">Sign in</Link>
+              <Link href="/login?mode=signup" className={cn(buttonVariants(), "h-9 px-4")}>Create account</Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
