@@ -6,7 +6,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, signUp, type ActionResult } from "../actions";
+import { resendConfirmation, signIn, signUp, type ActionResult } from "../actions";
 
 type Mode = "in" | "up";
 
@@ -19,6 +19,7 @@ export function LoginForm({ next, initialError, startMode = "in" }: { next?: str
   const pending = inPending || upPending;
   const error = state && "error" in state ? state.error : !state ? initialError : undefined;
   const sent = mode === "up" && upState && "ok" in upState ? upState.message : undefined;
+  const needsConfirmation = Boolean(state && "error" in state && state.needsConfirmation);
 
   if (sent) {
     return (
@@ -54,7 +55,7 @@ export function LoginForm({ next, initialError, startMode = "in" }: { next?: str
         ))}
       </div>
 
-      <form action={mode === "in" ? inAction : upAction} className="mt-5 space-y-4">
+      <form id="login-form" action={mode === "in" ? inAction : upAction} className="mt-5 space-y-4">
         <input type="hidden" name="next" value={next ?? ""} />
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
@@ -75,6 +76,7 @@ export function LoginForm({ next, initialError, startMode = "in" }: { next?: str
         </div>
 
         {error ? <p role="alert" className="text-sm text-rose-600">{error}</p> : null}
+        {needsConfirmation ? <ResendConfirmation /> : null}
 
         <Button type="submit" disabled={pending} className="h-11 w-full text-base">
           {pending ? "Please wait…" : mode === "in" ? "Sign in" : "Create my account"}
@@ -99,5 +101,32 @@ export function LoginForm({ next, initialError, startMode = "in" }: { next?: str
         )}
       </p>
     </>
+  );
+}
+
+/** Offered only when sign-in failed because the account was never confirmed. */
+function ResendConfirmation() {
+  const [state, action, pending] = useActionState<ActionResult | null, FormData>(resendConfirmation, null);
+  return (
+    <div className="rounded-xl border bg-muted/50 p-3 text-sm">
+      {state && "ok" in state ? (
+        <p role="status" className="text-emerald-700">{state.message}</p>
+      ) : (
+        <>
+          <p className="text-muted-foreground">We can send the confirmation link again.</p>
+          {state && "error" in state ? <p role="alert" className="mt-1 text-rose-600">{state.error}</p> : null}
+          <Button
+            type="submit"
+            form="login-form"
+            formAction={action}
+            variant="outline"
+            disabled={pending}
+            className="mt-2 h-9"
+          >
+            {pending ? "Sending…" : "Resend confirmation email"}
+          </Button>
+        </>
+      )}
+    </div>
   );
 }

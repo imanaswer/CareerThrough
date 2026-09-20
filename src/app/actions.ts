@@ -29,13 +29,20 @@ import { SCORING_VERSION } from "@/lib/adaptive";
 import { matchJobs } from "@/lib/matching";
 import { supabaseServer } from "@/lib/supabase/server";
 
-export type ActionResult = { error: string; values?: Record<string, string> } | { ok: true; message?: string };
+export type ActionResult =
+  | { error: string; values?: Record<string, string>; needsConfirmation?: boolean }
+  | { ok: true; message?: string };
 
 const roleIds = ROLES.map((r) => r.id) as [string, ...string[]];
 
 // ── Auth ───────────────────────────────────────────────────────
 
 const credentials = z.object({ email: z.email(), password: z.string().min(8, "Use at least 8 characters.").max(72) });
+/** Where confirmation links should come back to. Vercel sets VERCEL_URL per deployment. */
+function siteOrigin() {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+}
+
 const safeNext = (next: unknown) => (typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
 
 export async function signIn(_: ActionResult | null, form: FormData): Promise<ActionResult> {
@@ -43,7 +50,9 @@ export async function signIn(_: ActionResult | null, form: FormData): Promise<Ac
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await supabaseServer();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error?.code === "email_not_confirmed") return { error: "Your email isn't confirmed yet. Open the confirmation link we sent you, then sign in." };
+  if (error?.code === "email_not_confirmed") {
+    return { error: "This account exists but the email was never confirmed.", needsConfirmation: true };
+  }
   if (error) return { error: "That email and password don't match. Try again or create an account." };
   redirect(safeNext(form.get("next")));
 }
@@ -52,10 +61,9 @@ export async function signUp(_: ActionResult | null, form: FormData): Promise<Ac
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await supabaseServer();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
   const { data, error } = await supabase.auth.signUp({
     ...parsed.data,
-    options: { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext(form.get("next")))}` },
+    options: { emailRedirectTo: `${siteOrigin()}/auth/callback?next=${encodeURIComponent(safeNext(form.get("next")))}` },
   });
   if (error) {
     const friendly: Record<string, string> = {
@@ -69,6 +77,19 @@ export async function signUp(_: ActionResult | null, form: FormData): Promise<Ac
   if (data.user && data.user.identities?.length === 0) return { error: "An account with this email already exists. Sign in instead." };
   if (!data.session) return { ok: true, message: `We sent a confirmation link to ${parsed.data.email}. Open it on this device to finish creating your account (check spam too).` };
   redirect(safeNext(form.get("next")));
+}
+
+/** Send the confirmation link again, for an account that was created but never confirmed. */
+export async function resendConfirmation(_: ActionResult | null, form: FormData): Promise<ActionResult> {
+  const email = z.email().safeParse(form.get("email"));
+  if (!email.success) return { error: "Enter your email address first." };
+  const supabase = await supabaseServer();
+  const { error } = await supabase.auth.resend({ type: "signup", email: email.data, options: { emailRedirectTo: `${siteOrigin()}/auth/callback` } });
+  if (error?.code === "over_email_send_rate_limit") {
+    return { error: "The email service is rate limited right now. Wait a few minutes, then try again." };
+  }
+  if (error) return { error: error.message };
+  return { ok: true, message: `Sent again to ${email.data}. It can take a minute to arrive, and it may land in spam.` };
 }
 
 export async function signOut() {
