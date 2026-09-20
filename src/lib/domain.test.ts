@@ -185,7 +185,7 @@ describe("matching", () => {
     expect(m.unlocked).toBe(false);
     expect(m.missing).toHaveLength(1);
     expect(m.missing[0]).toMatchObject({ skillId: "manual-testing", current: 71, required: 75, reason: "below", href: "/plan/manual-testing" });
-    expect(m.missing[0].message).toContain("reach 75%");
+    expect(m.missing[0].message).toContain("Reach 75%");
     expect(m.summary).toBe("One remaining requirement.");
   });
   it("reports multiple missing skills", () => {

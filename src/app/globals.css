@@ -139,6 +139,142 @@
   }
 }
 
+/* Reduced motion means fewer and gentler, not none: fades stay, movement goes. */
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.12s !important;
+  }
+  .reveal,
+  .rise {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── Landing motion ─────────────────────────────────────────────
+   CSS only: it runs off the main thread, so it keeps its frames while
+   the page is still fetching and hydrating. */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Entrance for above-the-fold content. Staggered by --i. */
+.rise {
+  animation: rise 620ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* Scroll reveal, native. No scroll listeners, no JS, no layout thrash.
+   Outside the @supports block nothing is applied, so content is simply visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise 700ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      animation-timeline: view();
+      animation-range: entry 8% cover 32%;
+    }
+    .reveal-stagger > * {
+      animation: rise 700ms cubic-bezier(0.23, 1, 0.32, 1) both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 30%;
+    }
+  }
+}
+
+/* A number that counts up as its value changes, with no JS timer. */
+@property --num {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.tally {
+  counter-reset: num var(--num);
+  transition: --num 900ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.tally::after { content: counter(num); }
+
+/* Soft brand wash behind the hero. Sits under content and never intercepts a click. */
+.hero-wash {
+  background:
+    radial-gradient(60% 55% at 12% 8%, oklch(0.5 0.22 277 / 0.12), transparent 60%),
+    radial-gradient(45% 45% at 92% 18%, oklch(0.56 0.2 300 / 0.1), transparent 62%),
+    radial-gradient(50% 40% at 70% 96%, oklch(0.7 0.13 200 / 0.08), transparent 60%);
+}
+
+/* ── Playful landing furniture ──────────────────────────────────
+   Decorative only. Everything here is pointer-events:none, sits behind
+   content, and collapses under prefers-reduced-motion. */
+
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(0, -18px, 0) scale(1.04); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes sway {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50%  { transform: translate3d(12px, -10px, 0) rotate(6deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+
+@keyframes shimmer {
+  from { background-position: 0% 50%; }
+  to   { background-position: 200% 50%; }
+}
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: drift 14s ease-in-out infinite;
+}
+
+.float {
+  animation: sway 9s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -2.2s);
+}
+
+/* Gradient text that slowly moves, for the one line that carries the promise. */
+.shine {
+  background: linear-gradient(100deg, oklch(0.5 0.22 277), oklch(0.62 0.24 330), oklch(0.62 0.16 220), oklch(0.5 0.22 277));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 7s linear infinite;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 38s linear infinite;
+}
+
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* A faint dotted field, for sections that would otherwise be flat white. */
+.dotfield {
+  background-image: radial-gradient(oklch(0.5 0.22 277 / 0.18) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob, .float, .marquee-track, .shine { animation: none !important; }
+  .shine { background-position: 0 50%; }
 }

@@ -57,7 +57,7 @@ export function matchJob(job: Job, role: Role, ctx: MatchContext): JobMatch {
         ...base,
         met: false,
         reason: "not_assessed",
-        message: `Missing: ${name} — complete the ${name} assessment to establish verified evidence.`,
+        message: `Missing: ${name}. Take the ${name} assessment to establish verified evidence.`,
         href: `/assessment/skill:${req.skillId}`,
       };
     }
@@ -66,7 +66,7 @@ export function matchJob(job: Job, role: Role, ctx: MatchContext): JobMatch {
         ...base,
         met: false,
         reason: "below",
-        message: `Missing: ${name} — reach ${req.min}% to satisfy this requirement (currently ${current}%).`,
+        message: `Missing: ${name}. Reach ${req.min}% to satisfy this requirement, from ${current}% today.`,
         href: `/plan/${req.skillId}`,
       };
     }
@@ -95,14 +95,14 @@ export function matchJob(job: Job, role: Role, ctx: MatchContext): JobMatch {
   if (!projectOk) {
     blockers.push({
       kind: "project",
-      message: "This role asks for project evidence — submit your role project.",
+      message: "This role asks for project evidence. Submit your role project.",
       href: "/plan#project",
     });
   }
   if (!readinessOk) {
     blockers.push({
       kind: "readiness",
-      message: `Role readiness ${ctx.score}% — this opportunity opens at ${needReadiness}% for ${role.title}.`,
+      message: `Role readiness ${ctx.score}%. This opportunity opens at ${needReadiness}% for ${role.title}.`,
       href: "/dashboard",
     });
   }
