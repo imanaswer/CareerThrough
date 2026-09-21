@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, FileUp, Loader2, Plus, Sparkles, Trash2, TriangleAlert } from "lucide-react";
+import { Calendar, Check, ChevronDown, FileUp, Loader2, Plus, Sparkles, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/pending";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ const BLANK = {
 };
 const FIELDS: Record<ListKey, { key: string; label: string; long?: boolean; type?: string }[]> = {
   education: [{ key: "institution", label: "Institution" }, { key: "degree", label: "Degree" }, { key: "year", label: "Year", type: "year" }],
-  experience: [{ key: "company", label: "Company" }, { key: "title", label: "Title" }, { key: "period", label: "Period" }, { key: "summary", label: "What you did", long: true }],
+  experience: [{ key: "company", label: "Company" }, { key: "title", label: "Title" }, { key: "period", label: "Period", type: "period" }, { key: "summary", label: "Description", long: true }],
   projects: [{ key: "name", label: "Project name" }, { key: "url", label: "Link" }, { key: "description", label: "Description", long: true }],
 };
 const lines = (s: string) => s.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
@@ -50,6 +50,87 @@ function YearSelect({ value, onChange }: { value: string, onChange: (v: string) 
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+const parseMonthYear = (str: string) => {
+  const months: Record<string, string> = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
+  const dMatch = str.match(/(\d{4})-(\d{2})/);
+  if (dMatch) return dMatch[0];
+  const mMatch = str.toLowerCase().match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/);
+  if (mMatch) return `${mMatch[2]}-${months[mMatch[1]]}`;
+  return "";
+};
+
+function CustomMonthPicker({ value, max, disabled, onChange }: { value: string, max?: string, disabled?: boolean, onChange: (v: string) => void }) {
+  let formatted = "Select";
+  if (value) {
+    const [year, month] = value.split("-");
+    if (year && month) {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      formatted = `${monthNames[parseInt(month, 10) - 1]} ${year}`;
+    }
+  }
+
+  return (
+    <div className={`relative flex h-11 flex-1 min-w-0 items-center justify-between rounded-lg border border-input bg-background/50 px-2.5 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+      <span className={`text-sm tracking-tight truncate ${value ? "text-foreground" : "text-muted-foreground"}`}>{formatted}</span>
+      <Calendar className="size-4 shrink-0 opacity-50 ml-1" />
+      <input
+        type="month"
+        value={value}
+        max={max}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => {
+          try {
+            if ("showPicker" in e.target) {
+              (e.target as HTMLInputElement).showPicker();
+            }
+          } catch (err) {}
+        }}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+      />
+    </div>
+  );
+}
+
+function PeriodSelect({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+  const parts = value.split(/ to | - | – /);
+  const start = parseMonthYear(parts[0] || value);
+  const end = parts.length > 1 ? parseMonthYear(parts[1]) : "";
+  const isPresent = value.toLowerCase().includes("present") || value.toLowerCase().includes("current");
+
+  const now = new Date();
+  const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <CustomMonthPicker
+          value={start}
+          max={currentMonthYear}
+          onChange={(newStart) => onChange(newStart + (isPresent ? " to Present" : (end ? ` to ${end}` : "")))}
+        />
+        <span className="text-muted-foreground text-xs font-medium">to</span>
+        <CustomMonthPicker
+          value={isPresent ? currentMonthYear : end}
+          max={currentMonthYear}
+          disabled={isPresent}
+          onChange={(newEnd) => onChange((start ? `${start} to ` : "") + newEnd)}
+        />
+      </div>
+      <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer select-none">
+        <input type="checkbox" checked={isPresent} onChange={(e) => {
+          if (e.target.checked) {
+            onChange(`${start} to Present`);
+          } else {
+            onChange(`${start} to ${end}`);
+          }
+        }} className="h-4 w-4 rounded border-foreground/20 text-primary focus:ring-primary bg-background/50" />
+        I currently work here
+      </label>
     </div>
   );
 }
@@ -196,31 +277,39 @@ export function OnboardingForm({ initial, hasExisting, baselineHref }: { initial
           </div>
           {resume[key].length === 0 ? <p className="text-sm text-muted-foreground/70 py-2">Nothing added. That&apos;s fine — add {key} if you have any.</p> : null}
           <div className="space-y-4">
-            {resume[key].map((row, i) => (
-              <div key={i} className="group relative grid gap-5 rounded-2xl border border-foreground/10 bg-background/30 p-5 transition-colors hover:border-foreground/20 sm:grid-cols-3">
-                {FIELDS[key].map((f) => {
-                  const id = `${key}-${i}-${f.key}`;
-                  const value = (row as Record<string, string>)[f.key] ?? "";
-                  return (
-                    <div key={f.key} className={f.long ? "space-y-2 sm:col-span-3" : "space-y-2"}>
-                      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">{f.label}</Label>
-                      {f.long ? (
-                        <Textarea id={id} rows={2} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="bg-background/50 resize-y" />
-                      ) : f.type === "year" ? (
-                        <YearSelect value={value} onChange={(v) => setList(key, i, f.key, v)} />
-                      ) : (
-                        <Input id={id} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="h-11 bg-background/50" />
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="flex justify-end sm:col-span-3 pt-2 border-t border-foreground/5">
-                  <Button type="button" variant="ghost" size="sm" className="h-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600" onClick={() => setResume((r) => ({ ...r, [key]: r[key].filter((_, j) => j !== i) }))}>
-                    <Trash2 className="mr-1.5 size-4" aria-hidden /> Remove
-                  </Button>
+            {resume[key].map((row, i) => {
+              const colsClass = key === "experience" ? "sm:grid-cols-4" : key === "projects" ? "sm:grid-cols-2" : "sm:grid-cols-3";
+              return (
+                <div key={i} className={`group relative grid gap-5 rounded-2xl border border-foreground/10 bg-background/30 p-5 transition-colors hover:border-foreground/20 ${colsClass}`}>
+                  {FIELDS[key].map((f) => {
+                    const id = `${key}-${i}-${f.key}`;
+                    const value = (row as Record<string, string>)[f.key] ?? "";
+                    
+                    const spanClass = f.long ? (key === "experience" ? "sm:col-span-4" : key === "projects" ? "sm:col-span-2" : "sm:col-span-3") : f.key === "period" ? "sm:col-span-2" : "sm:col-span-1";
+                    
+                    return (
+                      <div key={f.key} className={`space-y-2 ${spanClass}`}>
+                        <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">{f.label}</Label>
+                        {f.long ? (
+                          <Textarea id={id} rows={4} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="bg-background/50 resize-y" />
+                        ) : f.type === "year" ? (
+                          <YearSelect value={value} onChange={(v) => setList(key, i, f.key, v)} />
+                        ) : f.type === "period" ? (
+                          <PeriodSelect value={value} onChange={(v) => setList(key, i, f.key, v)} />
+                        ) : (
+                          <Input id={id} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="h-11 bg-background/50" />
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div className={`flex justify-end pt-2 border-t border-foreground/5 ${key === "experience" ? "sm:col-span-4" : key === "projects" ? "sm:col-span-2" : "sm:col-span-3"}`}>
+                    <Button type="button" variant="ghost" size="sm" className="h-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600" onClick={() => setResume((r) => ({ ...r, [key]: r[key].filter((_, j) => j !== i) }))}>
+                      <Trash2 className="mr-1.5 size-4" aria-hidden /> Remove
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ))}

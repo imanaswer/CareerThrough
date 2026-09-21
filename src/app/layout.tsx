@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full bg-background text-foreground">
+    <html lang="en" className={`${inter.variable} ${outfit.variable} antialiased`} suppressHydrationWarning>
+      <body className="bg-background text-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
