@@ -190,7 +190,7 @@ export default function Home() {
         </section>
 
         {/* PROCESS SECTION */}
-        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-32">
+        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-20">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
           
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -199,7 +199,7 @@ export default function Home() {
               <p className="mt-4 text-lg text-muted-foreground">From setting a goal to landing the opportunity, everything is connected and evidence-based.</p>
             </div>
             
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {LOOP.map(({ icon: Icon, title, body }, i) => (
                 <ScrollReveal key={title} index={i}>
                   <div className="card-soft flex h-full flex-col p-8">
