@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
+
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export function CtaSection() {
@@ -36,7 +36,7 @@ export function CtaSection() {
             {/* Soft background glow that pulses */}
             <div className="absolute -inset-2 rounded-full bg-primary/20 blur-xl transition-all duration-500 group-hover:bg-primary/40 group-hover:blur-2xl"></div>
             
-            <Link 
+            <a 
               href="#roles" 
               className="relative inline-flex h-16 sm:h-20 overflow-hidden rounded-full p-[2px] transition-transform duration-300 group-hover:scale-105 shadow-2xl"
             >
@@ -48,7 +48,7 @@ export function CtaSection() {
                 Explore Roles
                 <ArrowRight className="ml-3 size-5 sm:size-6 transition-transform duration-300 group-hover:translate-x-2 text-primary" />
               </div>
-            </Link>
+            </a>
           </div>
 
           {/* Subtle Metadata Footnotes */}
