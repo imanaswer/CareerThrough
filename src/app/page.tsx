@@ -18,6 +18,7 @@ import { jobsForRole } from "@/content/jobs";
 import { CONTENT_VERSION } from "@/content/version";
 import { computeReadiness, type EvidenceItem } from "@/lib/readiness";
 import { matchJobs } from "@/lib/matching";
+import type { DemoRole } from "@/components/landing/role-demo";
 
 /**
  * Each role owns one colour, used for its tab, its card and its accents. That is the
@@ -132,7 +133,7 @@ export default function Home() {
 
           {/* Right Column: Floating Mockup */}
           <div className="mt-16 flex w-full justify-center lg:mt-0 lg:w-[55%] lg:justify-end z-10">
-            <ScrollReveal delay={0.5}>
+            <ScrollReveal index={3}>
               <FloatingIcons>
                 <HeroMockup />
               </FloatingIcons>

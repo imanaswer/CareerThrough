@@ -29,7 +29,7 @@ export function FluidBackground() {
     >
       <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
           <EffectComposer>
-              <Fluid fluidColor='#8b5cf6' curl={15} swirl={5} distortion={0.5} opacity={0.6} radius={0.2} backgroundColor="#000000" />
+              <Fluid fluidColor='#8b5cf6' curl={15} swirl={5} distortion={0.5} radius={0.2} backgroundColor="#000000" />
           </EffectComposer>
       </Canvas>
     </div>

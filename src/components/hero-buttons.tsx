@@ -3,7 +3,6 @@
 import { ArrowRight } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "./ui/button";
-import { MagneticButton } from "./magnetic-button";
 
 export function HeroButtons() {
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
@@ -13,7 +12,6 @@ export function HeroButtons() {
 
   return (
     <div className="mt-8 flex flex-wrap items-center gap-4">
-      <MagneticButton>
         <a
           href="#roles"
           onClick={(e) => handleScroll(e, "#roles")}
@@ -25,8 +23,6 @@ export function HeroButtons() {
           Explore Roles
           <ArrowRight className="ml-2 size-4 transition-transform group-hover:translate-x-1" />
         </a>
-      </MagneticButton>
-      <MagneticButton>
         <a
           href="#how"
           onClick={(e) => handleScroll(e, "#how")}
@@ -37,7 +33,6 @@ export function HeroButtons() {
         >
           How it works
         </a>
-      </MagneticButton>
     </div>
   );
 }

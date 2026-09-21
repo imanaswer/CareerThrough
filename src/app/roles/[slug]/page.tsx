@@ -10,7 +10,6 @@ import { DIMENSION_LABELS, PRIORITY_LABELS } from "@/content/taxonomy";
 import { requiredReadiness } from "@/lib/matching";
 import { enroll } from "../../actions";
 import { CinematicText } from "@/components/cinematic-text";
-import { MagneticButton } from "@/components/magnetic-button";
 import { HorizontalScrollJourney } from "@/components/horizontal-scroll-journey";
 import { InteractiveSkillList } from "@/components/interactive-skill-list";
 
@@ -62,11 +61,9 @@ export default async function RolePage({ params }: { params: Promise<{ slug: str
           </dl>
           <form action={enroll} className="mt-16 flex flex-col gap-4 items-start">
             <input type="hidden" name="roleId" value={role.id} />
-            <MagneticButton>
               <SubmitButton pendingLabel="Setting up..." className="h-14 rounded-full bg-foreground px-10 font-semibold text-lg text-background hover:bg-foreground/90 shadow-[0_0_20px_rgba(var(--foreground),0.2)]">
                 Start this path
               </SubmitButton>
-            </MagneticButton>
             <span className="text-xs text-foreground/40 uppercase tracking-widest mt-2">{role.journeyEstimate}</span>
           </form>
           </div>

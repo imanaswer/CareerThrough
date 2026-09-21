@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { SmoothScrolling } from "@/components/lenis-provider";
-import { CustomCursor } from "@/components/custom-cursor";
 import { Preloader } from "@/components/preloader";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -26,7 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <Preloader />
           <SmoothScrolling>
-            <CustomCursor />
             {children}
           </SmoothScrolling>
         </ThemeProvider>

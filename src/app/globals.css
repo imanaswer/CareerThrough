@@ -135,6 +135,12 @@
 }
 
 @layer components {
+  /* Hero surfaces only — white text sits on this, so it stays dark in both themes. */
+  .surface-hero {
+    background: linear-gradient(135deg, oklch(0.5 0.24 290), oklch(0.45 0.2 270));
+    color: white;
+  }
+
   /* Reusable glassmorphic cards */
   .card-soft {
     @apply rounded-2xl border border-foreground/10 bg-foreground/5 backdrop-blur-xl shadow-lg transition-all duration-300;
