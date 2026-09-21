@@ -118,8 +118,10 @@ export default function Home() {
             
             <h1 className="flex flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               <CinematicText text="Choose the role." delay={2.2} />
-              <CinematicText text="Prove you're ready." className="opacity-50" delay={2.6} />
-              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={3.0} />
+              <span className="animate-[rise_0.9s_ease-out_2.6s_both] inline-block py-1">
+                <span className="t-shimmer" data-text="Prove you're ready.">Prove you're ready.</span>
+              </span>
+              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={2.75} />
             </h1>
             
             <p className="mt-4 max-w-xl text-lg font-light text-muted-foreground sm:text-xl">
@@ -188,7 +190,7 @@ export default function Home() {
         </section>
 
         {/* PROCESS SECTION */}
-        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-32">
+        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-20">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
           
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -197,7 +199,7 @@ export default function Home() {
               <p className="mt-4 text-lg text-muted-foreground">From setting a goal to landing the opportunity, everything is connected and evidence-based.</p>
             </div>
             
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {LOOP.map(({ icon: Icon, title, body }, i) => (
                 <ScrollReveal key={title} index={i}>
                   <div className="card-soft flex h-full flex-col p-8">

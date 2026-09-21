@@ -19,14 +19,20 @@ export function PageHeader({ title, subtitle, children }: { title: string; subti
 
 export function Panel({ title, action, className, children, id }: { title?: string; action?: ReactNode; className?: string; children: ReactNode; id?: string }) {
   return (
-    <section id={id} className={cn("card-soft p-5", className)}>
+    <section id={id} className={cn("group relative overflow-hidden rounded-3xl border border-white/20 bg-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:bg-white/50 p-6 sm:p-8 dark:border-white/10 dark:bg-black/40 dark:hover:bg-black/50", className)}>
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-[60px] transition-transform duration-700 group-hover:scale-110" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-indigo-500/10 blur-[60px] transition-transform duration-700 group-hover:scale-110" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/0 opacity-50 dark:from-white/10" pointer-events-none="true" />
+      
       {title ? (
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">{title}</h2>
+        <div className="relative z-10 mb-6 flex items-center justify-between gap-3 border-b border-foreground/5 pb-5">
+          <h2 className="text-base font-semibold tracking-tight text-foreground/90">{title}</h2>
           {action}
         </div>
       ) : null}
-      {children}
+      <div className="relative z-10">
+        {children}
+      </div>
     </section>
   );
 }
@@ -34,14 +40,21 @@ export function Panel({ title, action, className, children, id }: { title?: stri
 /** Every empty state says what to do next. */
 export function EmptyState({ icon: Icon, title, body, href, cta }: { icon: LucideIcon; title: string; body: string; href?: string; cta?: string }) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-dashed bg-muted/40 px-6 py-10 text-center">
-      <span className="mb-3 grid size-11 place-items-center rounded-full bg-secondary text-primary">
-        <Icon className="size-5" aria-hidden />
-      </span>
-      <p className="font-medium">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{body}</p>
+    <div className="group relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border border-white/20 bg-white/40 px-6 py-16 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl transition-all duration-500 hover:bg-white/50 dark:border-white/10 dark:bg-black/40">
+
+
+      <div className="relative z-10 mb-6">
+        <div className="absolute -inset-4 animate-pulse rounded-full bg-primary/20 blur-xl transition-all duration-700 group-hover:bg-primary/30 group-hover:blur-2xl" />
+        <span className="relative flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-[0_0_30px_oklch(0.65_0.25_290/0.4)] ring-1 ring-white/20 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+          <Icon className="size-8" strokeWidth={1.5} aria-hidden />
+        </span>
+      </div>
+
+      <p className="relative z-10 text-xl font-bold tracking-tight text-foreground">{title}</p>
+      <p className="relative z-10 mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{body}</p>
+      
       {href && cta ? (
-        <Link href={href} className={cn(buttonVariants(), "mt-4 h-9 px-4")}>
+        <Link href={href} className={cn(buttonVariants({ size: "lg" }), "relative z-10 mt-8 rounded-full bg-foreground px-8 font-semibold text-background shadow-lg transition-all hover:scale-105 hover:bg-foreground/90 hover:shadow-xl")}>
           {cta}
         </Link>
       ) : null}
@@ -50,10 +63,10 @@ export function EmptyState({ icon: Icon, title, body, href, cta }: { icon: Lucid
 }
 
 const STATUS_BAR: Record<SkillStatus, string> = {
-  meets: "bg-emerald-500",
-  close: "bg-amber-500",
-  gap: "bg-rose-500",
-  no_evidence: "bg-muted-foreground/30",
+  meets: "bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_0_12px_rgb(16,185,129,0.5)]",
+  close: "bg-gradient-to-r from-amber-400 to-amber-500 shadow-[0_0_12px_rgb(245,158,11,0.5)]",
+  gap: "bg-gradient-to-r from-rose-400 to-rose-500 shadow-[0_0_12px_rgb(244,63,94,0.5)]",
+  no_evidence: "bg-gradient-to-r from-foreground/20 to-foreground/30",
 };
 
 /** Level bar with a target marker: answers "where am I vs where I need to be". */
@@ -66,10 +79,10 @@ export function LevelBar({ level, target, status, label }: { level: number; targ
       aria-valuemax={100}
       aria-valuenow={level}
       aria-valuetext={`${level}% of a ${target}% target`}
-      className="relative h-2 w-full rounded-full bg-muted"
+      className="relative h-2.5 w-full rounded-full bg-foreground/5 shadow-[inset_0_1px_3px_rgb(0,0,0,0.1)] border border-foreground/5 overflow-visible"
     >
-      <div className={cn("h-full rounded-full transition-[width] duration-700", STATUS_BAR[status])} style={{ width: `${level}%` }} />
-      <div className="absolute -top-1 h-4 w-0.5 rounded bg-foreground/70" style={{ left: `${target}%` }} aria-hidden />
+      <div className={cn("h-full rounded-full transition-all duration-1000 ease-out", STATUS_BAR[status])} style={{ width: `${level}%` }} />
+      <div className="absolute top-1/2 -mt-2 h-4 w-1.5 rounded-full bg-foreground shadow-md ring-2 ring-background z-10" style={{ left: `calc(${target}% - 3px)` }} aria-hidden />
     </div>
   );
 }
@@ -108,7 +121,7 @@ export function Gauge({ score, label, light }: { score: number; label: string; l
   return (
     <div className="relative mx-auto w-full max-w-[220px]" role="img" aria-label={`${label}: ${score} out of 100`}>
       <svg viewBox="0 0 200 112" className="w-full">
-        <path d="M20 100 A80 80 0 0 1 180 100" fill="none" strokeWidth="14" strokeLinecap="round" className={light ? "stroke-white/25" : "stroke-muted"} />
+        <path d="M20 100 A80 80 0 0 1 180 100" fill="none" strokeWidth="14" strokeLinecap="round" className={light ? "stroke-white/25" : "stroke-primary/15 dark:stroke-primary/20"} />
         <path
           d="M20 100 A80 80 0 0 1 180 100"
           fill="none"

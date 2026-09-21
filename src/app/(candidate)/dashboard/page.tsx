@@ -28,12 +28,14 @@ export default async function DashboardPage() {
   const first = profile.name.split(" ")[0] || "there";
 
   const header = (
-    <header className="mb-6">
-      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <header className="mb-8">
+      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
         <Target className="size-3.5" aria-hidden />
         {role.title}
       </p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">Welcome back, {first}</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+        Welcome back, <span className="text-gradient-primary">{first}</span>
+      </h1>
     </header>
   );
 
