@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { getUser } from "@/lib/data";
 import { supabaseConfigured } from "@/lib/supabase/server";
-import { FluidBackground } from "@/components/fluid-background";
+
 import { FloatingIcons } from "@/components/floating-icons";
 import { LoginForm } from "./form";
 
@@ -23,8 +23,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         
         {/* Animated Grid lines */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080801a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_20%,transparent_100%)]" />
-        
-        <FluidBackground />
       </div>
 
       {/* Left Side: Cinematic Branding & Atmosphere */}

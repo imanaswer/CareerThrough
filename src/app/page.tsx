@@ -5,12 +5,13 @@ import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { Chip } from "@/components/bits";
 import { HeroButtons } from "@/components/hero-buttons";
-import { FluidBackground } from "@/components/fluid-background";
 import { TiltCard } from "@/components/tilt-card";
 import { CinematicText } from "@/components/cinematic-text";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { EvidenceScaleAccordion } from "@/components/evidence-scale-accordion";
 import { CtaSection } from "@/components/cta-section";
+import { HeroMockup } from "@/components/hero-mockup";
+import { FloatingIcons } from "@/components/floating-icons";
 import { ROLES } from "@/content/roles";
 import { skillName } from "@/content/skills";
 import { jobsForRole } from "@/content/jobs";
@@ -31,31 +32,38 @@ export default function Home() {
       <main className="relative flex flex-col items-center overflow-clip selection:bg-primary/30">
         
         {/* Background Effects */}
-        <FluidBackground />
         <div className="hero-glow" />
-        <div className="absolute top-0 -z-10 h-[100vh] w-full bg-[radial-gradient(ellipse_at_top_center,oklch(0.65_0.25_290/0.15),transparent_50%)]" />
+        <div className="absolute top-0 -z-10 h-[100vh] w-full bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_290/0.15),transparent_60%)]" />
 
-        {/* HERO SECTION */}
-        <section className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col justify-center px-4 pt-24 sm:px-6">
-          <div className="flex flex-col items-start gap-6">
+        {/* HERO SECTION - SPLIT SCREEN */}
+        <section className="relative mx-auto flex min-h-[95vh] w-full max-w-7xl flex-col justify-center px-4 pt-24 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-12 lg:pt-0">
+          
+          {/* Left Column: Typography & Actions */}
+          <div className="flex w-full flex-col items-start gap-6 lg:w-[45%] z-20">
             <Chip className="border-foreground/10 bg-foreground/5 backdrop-blur-md text-foreground">Not a course platform</Chip>
             
-            <h1 className="flex max-w-4xl flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-7xl md:text-8xl">
+            <h1 className="flex flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               <CinematicText text="Choose the role." delay={2.2} />
               <CinematicText text="Prove you're ready." className="opacity-50" delay={2.6} />
-              <CinematicText text="Get opportunities." className="text-gradient-primary font-semibold" delay={3.0} />
+              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={3.0} />
             </h1>
             
-            <p className="mt-4 max-w-2xl text-lg font-light text-muted-foreground sm:text-xl">
-              Career Through turns a career goal into verified employability. Stop guessing what you need. Know how ready you are, what to fix next, and the exact opportunities it unlocks.
+            <p className="mt-4 max-w-xl text-lg font-light text-muted-foreground sm:text-xl">
+              Know how ready you are for a specific job, why, and what to fix next.
             </p>
             
-            <HeroButtons />
-            
-            <div className="mt-12 flex items-center gap-3 rounded-full border border-foreground/5 bg-foreground/5 px-4 py-2 text-sm text-muted-foreground backdrop-blur-sm">
-              <ShieldCheck className="size-4 text-primary" aria-hidden />
-              <span>Evidence before claims. Every score is explainable and traceable.</span>
+            <div className="mt-4 w-full max-w-sm">
+              <HeroButtons />
             </div>
+          </div>
+
+          {/* Right Column: Floating Mockup */}
+          <div className="mt-16 flex w-full justify-center lg:mt-0 lg:w-[55%] lg:justify-end z-10">
+            <ScrollReveal delay={0.5}>
+              <FloatingIcons>
+                <HeroMockup />
+              </FloatingIcons>
+            </ScrollReveal>
           </div>
         </section>
 
