@@ -38,9 +38,10 @@ export default async function RolePage({ params }: { params: Promise<{ slug: str
       <main className="relative flex flex-col lg:flex-row w-full min-h-screen bg-background">
         
         {/* Left Column (Sticky Hero) */}
-        <div className="lg:sticky lg:top-0 lg:h-screen w-full lg:w-5/12 p-8 lg:p-16 flex flex-col justify-center border-r border-foreground/5 bg-foreground/[0.01] backdrop-blur-xl z-10">
-          <p className="text-sm font-medium text-foreground/50 uppercase tracking-widest mb-6">Career path</p>
-          <h1 className="flex flex-col text-5xl font-semibold tracking-tighter sm:text-7xl">
+        <div className="lg:sticky lg:top-0 lg:h-screen w-full lg:w-5/12 border-r border-foreground/5 bg-foreground/[0.01] backdrop-blur-xl z-10 lg:overflow-y-auto custom-scrollbar">
+          <div className="flex flex-col justify-center min-h-full p-8 lg:p-16">
+            <p className="text-sm font-medium text-foreground/50 uppercase tracking-widest mb-6">Career path</p>
+            <h1 className="flex flex-col text-5xl font-semibold tracking-tighter sm:text-7xl">
             <CinematicText text={role.title} delay={0.2} />
           </h1>
           <p className="mt-8 text-xl font-light leading-relaxed text-foreground/70 max-w-md">
@@ -68,6 +69,7 @@ export default async function RolePage({ params }: { params: Promise<{ slug: str
             </MagneticButton>
             <span className="text-xs text-foreground/40 uppercase tracking-widest mt-2">{role.journeyEstimate}</span>
           </form>
+          </div>
         </div>
 
         {/* Right Column (Scrollable Content) */}
