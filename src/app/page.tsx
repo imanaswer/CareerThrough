@@ -197,7 +197,7 @@ export default function Home() {
             </div>
             
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {STEPS.map(({ icon: Icon, title, body }, i) => (
+              {LOOP.map(({ icon: Icon, title, body }, i) => (
                 <ScrollReveal key={title} index={i}>
                   <div className="card-soft flex h-full flex-col p-8">
                     <div className="flex items-center gap-4">
@@ -214,9 +214,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-            </div>
-          </div>
-        </section>
+
 
         {/* REDESIGNED SCORE SECTION - ACCORDION */}
         <EvidenceScaleAccordion />
