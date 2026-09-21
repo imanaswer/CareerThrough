@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check, BarChart3, Bug, Infinity as InfinityIcon, LayoutTemplate, Server, type LucideIcon } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check, BarChart3, Bug, Infinity as InfinityIcon, LayoutTemplate, Server, Sparkles, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
