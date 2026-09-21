@@ -42,7 +42,7 @@ export default async function CardPage() {
           </ul>
         </Panel>
         <h2 className="mb-3 mt-8 text-sm font-semibold text-muted-foreground">Preview — private, not shareable yet</h2>
-        <div className="pointer-events-none select-none opacity-60" aria-hidden><CareerCard name={profile.name} headline={profile.resume?.headline} role={role} readiness={readiness} evidence={evidence} status={status} /></div>
+        <div className="pointer-events-none select-none drop-shadow-sm transition-opacity" aria-hidden><CareerCard name={profile.name} headline={profile.resume?.headline} role={role} readiness={readiness} evidence={evidence} status={status} /></div>
       </>
     );
   }

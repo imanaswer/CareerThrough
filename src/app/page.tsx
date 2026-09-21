@@ -118,8 +118,10 @@ export default function Home() {
             
             <h1 className="flex flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               <CinematicText text="Choose the role." delay={2.2} />
-              <CinematicText text="Prove you're ready." className="opacity-50" delay={2.6} />
-              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={3.0} />
+              <span className="animate-[rise_0.9s_ease-out_2.6s_both] inline-block py-1">
+                <span className="t-shimmer" data-text="Prove you're ready.">Prove you're ready.</span>
+              </span>
+              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={2.75} />
             </h1>
             
             <p className="mt-4 max-w-xl text-lg font-light text-muted-foreground sm:text-xl">

@@ -181,24 +181,24 @@ export function InterviewCall({
   const answered = transcript.some((t) => t.speaker === "candidate");
 
   return (
-    <div className="card-soft flex h-[min(78vh,760px)] flex-col overflow-hidden">
-      <header className="flex items-center gap-3 border-b px-4 py-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">CT</span>
+    <div className="card-soft flex flex-1 min-h-[600px] flex-col overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/80 bg-white/60 dark:bg-black/40 dark:border-white/10 backdrop-blur-xl rounded-3xl">
+      <header className="flex items-center gap-3 border-b border-foreground/5 dark:border-white/10 px-6 py-4 bg-white/40 dark:bg-white/5">
+        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-primary dark:text-white dark:bg-primary/20 text-sm font-bold shadow-[inset_0_1px_2px_rgba(255,255,255,0.5)]">CT</span>
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 font-semibold">
+          <p className="flex items-center gap-1.5 font-bold text-lg">
             {title}
-            <BadgeCheck className="size-4 text-primary" aria-label="Career Through interviewer" />
+            <BadgeCheck className="size-5 text-primary" aria-label="Career Through interviewer" />
           </p>
-          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+          <p className="truncate text-sm text-muted-foreground dark:text-white/70 font-medium">{subtitle}</p>
         </div>
       </header>
 
-      <div ref={scroller} className="flex-1 space-y-4 overflow-y-auto px-4 py-5" aria-live="polite" aria-label="Interview transcript">
+      <div ref={scroller} className="flex-1 space-y-6 overflow-y-auto px-6 py-6" aria-live="polite" aria-label="Interview transcript">
         {transcript.map((t, i) => (
-          <div key={i} className={cn("flex gap-2.5", t.speaker === "candidate" && "flex-row-reverse")}>
+          <div key={i} className={cn("flex gap-3", t.speaker === "candidate" && "flex-row-reverse")}>
             <span
               className={cn(
-                "mt-1 grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-semibold",
+                "mt-1 grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-bold shadow-sm",
                 t.speaker === "interviewer" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground",
               )}
               aria-hidden
@@ -207,9 +207,9 @@ export function InterviewCall({
             </span>
             <p
               className={cn(
-                "max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                t.speaker === "interviewer" ? "bg-muted text-foreground" : "bg-primary/10 text-foreground ring-1 ring-primary/15",
-                t.probe && "border-l-2 border-primary",
+                "max-w-[85%] whitespace-pre-wrap rounded-[1.5rem] px-5 py-3.5 text-base leading-relaxed shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]",
+                t.speaker === "interviewer" ? "bg-white dark:bg-white/10 text-foreground dark:text-white/90 border border-white/60 dark:border-white/10" : "bg-primary text-primary-foreground dark:bg-primary/30 dark:text-white",
+                t.probe && "border-l-4 border-l-primary",
               )}
             >
               {t.text}
@@ -217,18 +217,18 @@ export function InterviewCall({
           </div>
         ))}
         {interim ? (
-          <div className="flex flex-row-reverse gap-2.5">
-            <span className="mt-1 size-7 shrink-0" aria-hidden />
-            <p className="max-w-[80%] rounded-2xl bg-primary/5 px-4 py-2.5 text-sm italic text-muted-foreground ring-1 ring-primary/10">{interim}</p>
+          <div className="flex flex-row-reverse gap-3">
+            <span className="mt-1 size-8 shrink-0" aria-hidden />
+            <p className="max-w-[85%] rounded-[1.5rem] bg-primary/10 px-5 py-3.5 text-base italic text-foreground/70 dark:text-white/70 border border-primary/20">{interim}</p>
           </div>
         ) : null}
         {pending ? (
-          <div className="flex gap-2.5">
-            <span className="mt-1 grid size-7 shrink-0 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground" aria-hidden>CT</span>
-            <p className="rounded-2xl bg-muted px-4 py-3">
-              <span className="flex gap-1" aria-label="Interviewer is thinking">
+          <div className="flex gap-3">
+            <span className="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground shadow-sm" aria-hidden>CT</span>
+            <p className="rounded-[1.5rem] bg-white dark:bg-white/10 px-5 py-5 border border-white/60 dark:border-white/10 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
+              <span className="flex gap-1.5" aria-label="Interviewer is thinking">
                 {[0, 1, 2].map((i) => (
-                  <span key={i} className="size-1.5 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: `${i * 150}ms` }} />
+                  <span key={i} className="size-2 animate-pulse rounded-full bg-primary/60" style={{ animationDelay: `${i * 150}ms` }} />
                 ))}
               </span>
             </p>
@@ -236,12 +236,12 @@ export function InterviewCall({
         ) : null}
       </div>
 
-      {error ? <p role="alert" className="border-t bg-amber-50 px-4 py-2 text-xs text-amber-900">{error}</p> : null}
+      {error ? <p role="alert" className="border-t bg-rose-50 px-6 py-3 text-sm font-medium text-rose-600 dark:bg-rose-950/50 dark:text-rose-200">{error}</p> : null}
 
       {typing && !ended ? (
-        <div className="border-t px-4 py-3">
+        <div className="border-t border-foreground/5 dark:border-white/10 bg-white/40 dark:bg-white/5 px-6 py-4 backdrop-blur-xl">
           <label htmlFor="say" className="sr-only">Your answer</label>
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-3">
             <Textarea
               id="say"
               rows={2}
@@ -252,27 +252,28 @@ export function InterviewCall({
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
               }}
               placeholder="Type your answer…  (⌘↵ to send)"
+              className="resize-none rounded-2xl bg-white dark:bg-black/50 dark:border-white/20 text-base shadow-sm focus-visible:ring-primary/50"
             />
-            <Button className="h-10 px-4" disabled={pending || !draft.trim()} onClick={send}>
-              {pending ? <Spinner /> : <Send className="size-4" aria-hidden />}
+            <Button className="h-12 rounded-xl px-6 font-semibold shadow-sm" disabled={pending || !draft.trim()} onClick={send}>
+              {pending ? <Spinner /> : <Send className="size-5 mr-2" aria-hidden />}
               Send
             </Button>
           </div>
         </div>
       ) : null}
 
-      <footer className="flex items-center justify-between gap-3 border-t px-4 py-3">
-        <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium tabular-nums">
-          <Clock className="size-3.5 text-muted-foreground" aria-hidden />
+      <footer className="flex items-center justify-between gap-3 border-t border-foreground/5 dark:border-white/10 bg-white/40 dark:bg-white/5 px-6 py-4 backdrop-blur-xl">
+        <span className="flex items-center gap-2 rounded-full bg-white dark:bg-black/40 px-3 py-1.5 text-sm font-semibold tabular-nums shadow-sm border border-foreground/5 dark:border-white/10">
+          <Clock className="size-4 text-primary" aria-hidden />
           {mmss(left)}
         </span>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label={speakerOn ? "Mute the interviewer" : "Unmute the interviewer"} onClick={() => { setSpeakerOn((v) => { if (v) window.speechSynthesis?.cancel(); return !v; }); }}>
-            {speakerOn ? <Volume2 className="size-4" aria-hidden /> : <VolumeX className="size-4" aria-hidden />}
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="rounded-full bg-white dark:bg-black/40 border-foreground/10 dark:border-white/20 hover:bg-muted" aria-label={speakerOn ? "Mute the interviewer" : "Unmute the interviewer"} onClick={() => { setSpeakerOn((v) => { if (v) window.speechSynthesis?.cancel(); return !v; }); }}>
+            {speakerOn ? <Volume2 className="size-5 text-foreground dark:text-white" aria-hidden /> : <VolumeX className="size-5 text-foreground dark:text-white" aria-hidden />}
           </Button>
-          <Button variant="ghost" size="icon" aria-label={typing ? "Answer by voice" : "Answer by typing"} onClick={() => setTyping((v) => !v)}>
-            <Keyboard className={cn("size-4", typing && "text-primary")} aria-hidden />
+          <Button variant="outline" size="icon" className="rounded-full bg-white dark:bg-black/40 border-foreground/10 dark:border-white/20 hover:bg-muted" aria-label={typing ? "Answer by voice" : "Answer by typing"} onClick={() => setTyping((v) => !v)}>
+            <Keyboard className={cn("size-5 text-foreground dark:text-white", typing && "text-primary dark:text-primary")} aria-hidden />
           </Button>
 
           {!typing && !ended ? (
@@ -281,9 +282,9 @@ export function InterviewCall({
               aria-label={listening ? "Stop and send" : "Hold to answer"}
               onClick={listening ? send : toggleMic}
               disabled={pending}
-              className={cn("size-12 rounded-full", listening ? "bg-rose-600 text-white hover:bg-rose-600/90" : "bg-foreground text-background hover:bg-foreground/90")}
+              className={cn("size-14 rounded-full shadow-lg transition-transform hover:scale-105", listening ? "bg-rose-500 text-white hover:bg-rose-600 ring-4 ring-rose-500/20" : "bg-primary text-primary-foreground hover:bg-primary/90")}
             >
-              {listening ? <MicOff className="size-5" aria-hidden /> : <Mic className="size-5" aria-hidden />}
+              {listening ? <MicOff className="size-6" aria-hidden /> : <Mic className="size-6" aria-hidden />}
             </Button>
           ) : null}
 
@@ -292,24 +293,24 @@ export function InterviewCall({
             aria-label={ended ? finishLabel : "End the interview"}
             disabled={pending}
             onClick={() => start(async () => { recognition.current?.stop(); window.speechSynthesis?.cancel(); await onFinish(transcript); })}
-            className="size-12 rounded-full bg-rose-600 text-white hover:bg-rose-600/90"
+            className="size-14 rounded-full bg-rose-500 text-white shadow-lg transition-transform hover:scale-105 hover:bg-rose-600 ring-4 ring-rose-500/20"
           >
-            <X className="size-5" aria-hidden />
+            <X className="size-6" aria-hidden />
           </Button>
         </div>
       </footer>
 
       {listening ? (
-        <p className="border-t bg-muted/40 px-4 py-1.5 text-center text-xs text-muted-foreground">
+        <p className="border-t border-foreground/5 dark:border-white/10 bg-primary/5 dark:bg-primary/10 px-6 py-2.5 text-center text-sm font-medium text-primary">
           Listening — speak naturally, then press the red button when you&apos;re done.
         </p>
       ) : null}
       {ended ? (
-        <p className="border-t bg-secondary px-4 py-2 text-center text-sm font-medium text-secondary-foreground">
+        <p className="border-t border-foreground/5 dark:border-white/10 bg-secondary px-6 py-3 text-center text-sm font-semibold text-secondary-foreground">
           The interview is over. Press the red button to see your write-up.
         </p>
       ) : !answered && !typing ? (
-        <p className="border-t bg-muted/40 px-4 py-1.5 text-center text-xs text-muted-foreground">
+        <p className="border-t border-foreground/5 dark:border-white/10 bg-muted/40 dark:bg-white/5 px-6 py-2.5 text-center text-sm font-medium text-muted-foreground dark:text-white/70">
           Press the microphone to answer out loud, or switch to typing with the keyboard button.
         </p>
       ) : null}
