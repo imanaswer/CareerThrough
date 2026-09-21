@@ -34,33 +34,33 @@ export default async function CandidateLayout({ children }: { children: ReactNod
       </a>
       
       {/* High-Visibility Clean Floating Left Sidebar */}
-      <aside className="sticky top-6 z-10 hidden h-[calc(100vh-48px)] ml-6 mt-6 w-[290px] shrink-0 flex-col overflow-y-auto scrollbar-hide rounded-[2rem] border border-white bg-white/80 px-6 py-8 shadow-[0_8px_40px_rgb(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)] backdrop-blur-2xl lg:flex dark:border-white/10 dark:bg-black/60 dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)]">
+      <aside className="sticky top-6 z-10 hidden h-[calc(100vh-48px)] ml-6 mt-6 w-[290px] shrink-0 flex-col overflow-y-auto scrollbar-hide rounded-[2rem] border border-white bg-white/80 px-5 py-6 shadow-[0_8px_40px_rgb(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)] backdrop-blur-2xl lg:flex dark:border-white/10 dark:bg-black/60 dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)]">
         
-        <div className="mb-10 px-1 flex items-center justify-between">
+        <div className="mb-5 px-1 flex items-center justify-between">
           <Brand href="/" />
           <ThemeToggle />
         </div>
         
         {/* Target Role Card */}
-        <div className="mb-8 rounded-2xl border border-white/80 bg-white px-5 py-4 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] ring-1 ring-black/5 dark:border-white/10 dark:bg-white/5">
+        <div className="mb-5 rounded-2xl border border-white/80 bg-white px-5 py-3 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] ring-1 ring-black/5 dark:border-white/10 dark:bg-white/5">
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/80 dark:text-white/70">
             <Target className="size-3.5 text-primary dark:text-white" aria-hidden /> Target role
           </p>
-          <p className="mt-1.5 text-base font-semibold text-foreground/90 dark:text-white">{role.title}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground/90 dark:text-white">{role.title}</p>
         </div>
 
         {/* Navigation */}
-        <nav aria-label="Main" className="flex flex-1 flex-col gap-1">
+        <nav aria-label="Main" className="flex flex-1 flex-col gap-0.5">
           {NAV.map(({ href, label, icon: Icon }) => (
             <NavLink key={href} href={href} label={label} icon={<Icon className="size-5" aria-hidden />} />
           ))}
-          <div className="mt-6 border-t border-foreground/5 pt-6 dark:border-white/10">
+          <div className="mt-auto border-t border-foreground/5 pt-3 dark:border-white/10">
             <NavLink href="/#roles" label="Career Explorer" icon={<Compass className="size-5" aria-hidden />} />
           </div>
         </nav>
         
         {/* Profile / Sign Out */}
-        <div className="mt-6 border-t border-foreground/5 pt-6 dark:border-white/10">
+        <div className="mt-3 border-t border-foreground/5 pt-3 dark:border-white/10">
           <SignOut email={profile.name ? `${profile.name} · ${profile.email}` : profile.email} />
         </div>
       </aside>
