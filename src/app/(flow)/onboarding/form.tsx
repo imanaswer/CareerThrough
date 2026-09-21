@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileUp, Loader2, Plus, Sparkles, Trash2, TriangleAlert } from "lucide-react";
+import { Check, ChevronDown, FileUp, Loader2, Plus, Sparkles, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/pending";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,34 @@ const FIELDS: Record<ListKey, { key: string; label: string; long?: boolean; type
   projects: [{ key: "name", label: "Project name" }, { key: "url", label: "Link" }, { key: "description", label: "Description", long: true }],
 };
 const lines = (s: string) => s.split(/[\n,]/).map((x) => x.trim()).filter(Boolean);
+
+function YearSelect({ value, onChange }: { value: string, onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const years = Array.from({ length: 50 }, (_, i) => new Date().getFullYear() + 10 - i);
+  return (
+    <div className="relative w-full">
+      <button type="button" onClick={() => setOpen(!open)} className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        {value || <span className="text-muted-foreground">Select year</span>}
+        <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-auto rounded-md border border-foreground/10 bg-background/95 backdrop-blur-md shadow-lg animate-in fade-in-0 zoom-in-95">
+            {years.map((y) => (
+              <button key={y} type="button" onClick={() => { onChange(y.toString()); setOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center py-2 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary">
+                <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center text-primary">
+                  {value === y.toString() && <Check className="h-4 w-4" />}
+                </span>
+                {y}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function OnboardingForm({ initial, hasExisting, baselineHref }: { initial: ResumeData; hasExisting: boolean; baselineHref: string }) {
   const router = useRouter();
@@ -179,14 +207,9 @@ export function OnboardingForm({ initial, hasExisting, baselineHref }: { initial
                       {f.long ? (
                         <Textarea id={id} rows={2} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="bg-background/50 resize-y" />
                       ) : f.type === "year" ? (
-                        <select id={id} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                          <option value="" disabled>Select year</option>
-                          {Array.from({ length: 60 }, (_, i) => new Date().getFullYear() + 10 - i).map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
+                        <YearSelect value={value} onChange={(v) => setList(key, i, f.key, v)} />
                       ) : (
-                        <Input id={id} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="h-10 bg-background/50" />
+                        <Input id={id} value={value} onChange={(e) => setList(key, i, f.key, e.target.value)} className="h-11 bg-background/50" />
                       )}
                     </div>
                   );
