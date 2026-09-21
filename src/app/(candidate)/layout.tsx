@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, Briefcase, ClipboardCheck, Compass, FolderCheck, LayoutDashboard, Route, Target, User } from "lucide-react";
+import { BadgeCheck, Briefcase, ClipboardCheck, Compass, FolderCheck, LayoutDashboard, MessageSquare, Route, Target, User } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { NavLink } from "@/components/nav-link";
 import { SignOut } from "@/components/sign-out";
@@ -8,6 +8,7 @@ import { requireCandidate } from "@/lib/data";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/plan", label: "My Plan", icon: Route },
+  { href: "/practice", label: "Practice", icon: MessageSquare },
   { href: "/assessments", label: "Assessments", icon: ClipboardCheck },
   { href: "/evidence", label: "Evidence", icon: FolderCheck },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
@@ -68,7 +69,7 @@ export default async function CandidateLayout({ children }: { children: ReactNod
       </header>
 
       <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:py-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-[1560px]">{children}</div>
       </main>
     </div>
   );

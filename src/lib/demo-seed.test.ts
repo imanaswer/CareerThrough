@@ -3,12 +3,14 @@ import { writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
-import { attempt, db, evidence, profile } from "@/db";
+import { attempt, careerEvent, db, evidence, interviewResponse, profile, readinessSnapshot } from "@/db";
 import { CONTENT_VERSION } from "@/content/version";
 import { getRole } from "@/content/roles";
 import { QUESTIONS, getAssessment } from "@/content/assessments";
 import { jobsForRole } from "@/content/jobs";
-import { evidenceFromScore, scoreAttempt, selectQuestions } from "./assessment";
+import { selectQuestions } from "./assessment";
+import { evidenceFromAdaptive } from "./attempt";
+import { scoreAdaptive, startDifficulty } from "./adaptive";
 import { computeImpact } from "./impact";
 import { matchJobs } from "./matching";
 import { computeReadiness } from "./readiness";
@@ -35,7 +37,25 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
     // A believable starting point: stronger on fundamentals, weak on the specialist skills.
     const strong = ["linux", "git", "comm-written", "apt-logical"];
     const weak = ["iac", "monitoring", "networking"];
-    const retakeSkills = ["docker", "ci-cd"].filter((id) => skillIds.includes(id));
+    const retakeSkills = ["docker", "ci-cd", "networking"].filter((id) => skillIds.includes(id));
+
+    /** What a retake of this skill scores when N answers are right, per the adaptive engine. */
+    const retakeScore = (skillId: string, correct: number) => {
+      const def = getAssessment(`skill:${skillId}`)!;
+      const qs = selectQuestions(def, QUESTIONS, "seed");
+      return scoreOf(qs, new Map([[skillId, correct]]), def).bySkill[skillId]?.pct ?? 0;
+    };
+
+    /** Score a set of questions as the adaptive engine would. */
+    const scoreOf = (questions: typeof baselineQs, correct: Map<string, number>, def: { kind: "baseline" | "skill" | "final"; questionsPerSkill: number; skillIds: string[] }) => {
+      const answers = answersFor(questions, correct);
+      return scoreAdaptive(
+        questions.map((q) => ({ question: q, choice: answers[q.id] })),
+        startDifficulty(def.kind),
+        Object.fromEntries(def.skillIds.map((id) => [id, def.questionsPerSkill])),
+        "seed",
+      );
+    };
 
     /** Answer the issued questions so each skill lands on a chosen number correct. */
     const answersFor = (questions: typeof baselineQs, correctBySkill: Map<string, number>) => {
@@ -54,12 +74,12 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
     // 0-3 on the baseline and 0-6 on a retake. The engine decides the score.
     const rand = (n: number) => Math.floor(Math.random() * n);
     let plan: { baseline: Map<string, number>; correct: number[] } | undefined;
-    for (let attemptNo = 0; attemptNo < 40_000 && !plan; attemptNo++) {
+    for (let attemptNo = 0; attemptNo < 120_000 && !plan; attemptNo++) {
       const baseline = new Map(
         skillIds.map((id) => [id, strong.includes(id) ? 2 + rand(2) : weak.includes(id) ? rand(2) : 1 + rand(2)] as const),
       );
-      const correct = retakeSkills.map(() => 3 + rand(4));
-      const baselineTry = evidenceFromScore(baselineDef, scoreAttempt(baselineQs, answersFor(baselineQs, baseline)), {
+      const correct = retakeSkills.map(() => 2 + rand(5));
+      const baselineTry = evidenceFromAdaptive(baselineDef, scoreOf(baselineQs, baseline, baselineDef), {
         id: baselineId,
         verified: true,
         completedAt: new Date(Date.now() - 12 * 86_400_000),
@@ -71,10 +91,10 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
         source: "skill",
         refId: null,
         url: null,
-        score: Math.round((correct[i] / 6) * 100),
+        score: retakeScore(skillId, correct[i]),
         confidence: "medium" as const,
         verified: true,
-        detail: { correct: correct[i], total: 6 },
+        detail: { correct: correct[i], total: 6, peakCorrect: Math.min(correct[i] + 1, 4), scoringVersion: "adaptive-v1" },
         createdAt: new Date(),
         expiresAt: null,
       }));
@@ -83,10 +103,13 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
     expect(plan, `no combination of results reaches exactly ${TARGET}%`).toBeDefined();
 
     // ── Write it, through the same paths the app uses ───────────────
-    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const admin = createClient((process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL)!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     const existing = (await admin.auth.admin.listUsers()).data.users.find((u) => u.email === EMAIL);
     if (existing) {
-      for (const t of [attempt, evidence]) await db.delete(t).where(eq(t.userId, existing.id));
+      // Every table, or the old profile row is orphaned and the account appears twice.
+      for (const t of [interviewResponse, careerEvent, readinessSnapshot, evidence, attempt, profile]) {
+        await db.delete(t).where(eq(t.userId, existing.id));
+      }
       await admin.auth.admin.deleteUser(existing.id);
     }
     const password = "CT-" + randomBytes(9).toString("base64url");
@@ -142,10 +165,10 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
       const def = getAssessment(assessmentId)!;
       const completedAt = new Date(Date.now() - daysAgo * 86_400_000);
       const answers = answersFor(questions, correct);
-      const score = scoreAttempt(questions, answers);
+      const score = scoreOf(questions, correct, def);
       await db.transaction(async (tx) => {
         const before = await liveReadiness(userId, ROLE, tx);
-        const rows = evidenceFromScore(def, score, { id, verified: true, completedAt });
+        const rows = evidenceFromAdaptive(def, score, { id, verified: true, completedAt });
         await tx.insert(attempt).values({
           id,
           userId,
@@ -180,7 +203,8 @@ describe.skipIf(!process.env.SEED_DEMO)("seed demo candidate", () => {
     for (const [i, skillId] of retakeSkills.entries()) {
       const id = randomUUID();
       const def = getAssessment(`skill:${skillId}`)!;
-      await record(def.id, id, selectQuestions(def, QUESTIONS, id), new Map([[skillId, plan!.correct[i]]]), 6 - i * 4);
+      // Same seed as the search, or the questions differ and so does the score.
+      await record(def.id, id, selectQuestions(def, QUESTIONS, "seed"), new Map([[skillId, plan!.correct[i]]]), 8 - i * 3);
     }
 
     const final = await liveReadiness(userId, ROLE);

@@ -1,16 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { ROLES, getRole } from "@/content/roles";
-import { SKILLS } from "@/content/skills";
-import { QUESTIONS, getAssessment } from "@/content/assessments";
+import { SKILLS, getSkill } from "@/content/skills";
+import { QUESTIONS, getAssessment, questionsForSkill } from "@/content/assessments";
 import { PLANS } from "@/content/plans";
 import { JOBS, jobsForRole } from "@/content/jobs";
 import { bands, type Job, type Question, type Role } from "@/content/taxonomy";
-import { FORMULA_VERSION, RESUME_CLAIM_CAP, computeReadiness, type EvidenceItem } from "./readiness";
+import { FORMULA_VERSION, INTERVIEW_PASS, KNOWLEDGE_ONLY_CAP, RESUME_CLAIM_CAP, computeReadiness, type EvidenceItem } from "./readiness";
 import { matchJob, matchJobs, requiredReadiness } from "./matching";
 import { nextUnlock, projectSkillImpact } from "./simulate";
 import { claimedSkills } from "./resume-claims";
 import { EMPTY_RESUME } from "./resume-schema";
-import { evidenceFromScore, isVerified, scoreAttempt, selectQuestions, toPublic } from "./assessment";
+import { isVerified, toPublic } from "./assessment";
+import { difficultyOf, nextDifficulty, pickQuestion, scoreAdaptive, startDifficulty, SCORING_VERSION } from "./adaptive";
+import { evidenceFromAdaptive } from "./attempt";
+import { selectPrompts } from "./interview/select";
+import { evaluateAnswer, interviewScoringAvailable } from "./interview/provider";
+import { rubricToScore } from "./interview/rubric";
+import { analyseAnswer } from "./interview/feedback";
+import { answersByPrompt, nextInterviewerTurn, type Turn } from "./interview/conductor";
+import { INTERVIEW_PROMPTS, promptsForRole, promptsForSkill } from "@/content/interview";
 import { computeJourney } from "./journey";
 import { computeImpact } from "./impact";
 
@@ -177,7 +185,7 @@ describe("matching", () => {
     expect(m.unlocked).toBe(false);
     expect(m.missing).toHaveLength(1);
     expect(m.missing[0]).toMatchObject({ skillId: "manual-testing", current: 71, required: 75, reason: "below", href: "/plan/manual-testing" });
-    expect(m.missing[0].message).toContain("reach 75%");
+    expect(m.missing[0].message).toContain("Reach 75%");
     expect(m.summary).toBe("One remaining requirement.");
   });
   it("reports multiple missing skills", () => {
@@ -205,49 +213,164 @@ describe("matching", () => {
   });
 });
 
-describe("assessment", () => {
+describe("adaptive assessment", () => {
   const def = getAssessment("skill:sql")!;
-  const issued = selectQuestions(def, QUESTIONS, "attempt-1");
-  const allRight = Object.fromEntries(issued.map((q) => [q.id, q.answer]));
+  const pool = questionsForSkill("sql");
+  const skill = getSkill("sql");
+  const byDifficulty = (d: number) => pool.filter((q) => difficultyOf(q, skill) === d);
+  const run = (answers: (q: Question) => number | undefined, kind: "baseline" | "skill" = "skill", count = 6) => {
+    const start = startDifficulty(kind);
+    const asked: { question: Question; choice: number | undefined }[] = [];
+    const used = new Set<string>();
+    for (let i = 0; i < count; i++) {
+      const wanted = nextDifficulty(asked, start);
+      const q = pickQuestion(pool, used, wanted, "seed");
+      if (!q) break;
+      used.add(q.id);
+      asked.push({ question: q, choice: answers(q) });
+    }
+    return { asked, score: scoreAdaptive(asked, start, { sql: count }, "seed") };
+  };
 
   it("derives assessment definitions from ids and rejects unknown ones", () => {
     expect(getAssessment("baseline:qa-engineer")).toMatchObject({ kind: "baseline", questionsPerSkill: 3 });
     expect(getAssessment("skill:nope")).toBeNull();
     expect(getAssessment("garbage")).toBeNull();
   });
-  it("selects reproducibly, covers every topic, and never exposes answer keys", () => {
-    expect(issued).toHaveLength(6);
-    expect(new Set(issued.map((q) => q.topicId)).size).toBe(4);
-    expect(selectQuestions(def, QUESTIONS, "attempt-1").map((q) => q.id)).toEqual(issued.map((q) => q.id));
-    const pub = toPublic(issued[0]) as Record<string, unknown>;
+
+  it("gets harder on a correct answer and easier on a wrong one", () => {
+    const climb = run((q) => q.answer);
+    // The pool holds two questions per band, so a perfect run climbs and then reuses what is left.
+    expect(climb.asked.map((a) => difficultyOf(a.question, skill))).toEqual([2, 3, 4, 4, 3, 2]);
+    const fall = run((q) => (q.answer + 1) % 4);
+    const path = fall.asked.map((a) => difficultyOf(a.question, skill));
+    expect(path.slice(0, 3)).toEqual([2, 1, 1]);
+    // Only two questions exist per band, so a failing run eventually exhausts the easy ones
+    // and is offered harder ones again — but it stays easier overall than a climbing run.
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(mean(path)).toBeLessThan(mean(climb.asked.map((a) => difficultyOf(a.question, skill))));
+  });
+
+  it("scores by difficulty, so an easy run cannot look like a strong one", () => {
+    // Right on the easiest band only, wrong on anything harder.
+    const easyOnly = run((q) => (difficultyOf(q, skill) <= 1 ? q.answer : (q.answer + 1) % 4));
+    expect(easyOnly.score.bySkill.sql.correct).toBeGreaterThan(0);
+    expect(easyOnly.score.bySkill.sql.pct).toBeLessThan(40);
+    expect(run((q) => q.answer).score.bySkill.sql.pct).toBe(100);
+  });
+
+  it("records the hardest band answered correctly", () => {
+    expect(run((q) => q.answer).score.bySkill.sql.peakCorrect).toBe(4);
+    expect(run((q) => (difficultyOf(q, skill) <= 1 ? q.answer : (q.answer + 1) % 4)).score.bySkill.sql.peakCorrect).toBe(1);
+  });
+
+  it("treats a skip or an invalid choice as wrong", () => {
+    const skipped = run(() => undefined);
+    expect(skipped.score.correct).toBe(0);
+    expect(skipped.score.bySkill.sql.pct).toBe(0);
+    expect(run(() => 99).score.correct).toBe(0);
+  });
+
+  it("never exposes answer keys to the browser", () => {
+    const pub = toPublic(pool[0]) as Record<string, unknown>;
     expect("answer" in pub || "explanation" in pub).toBe(false);
   });
-  it("scores on the server, per skill and per topic", () => {
-    const s = scoreAttempt(issued, allRight);
-    expect(s).toMatchObject({ correct: 6, total: 6, pct: 100 });
-    expect(s.bySkill.sql.pct).toBe(100);
-    const half = scoreAttempt(issued, Object.fromEntries(issued.slice(0, 3).map((q) => [q.id, q.answer])));
-    expect(half.pct).toBe(50);
+
+  it("falls back to the nearest band when one is exhausted", () => {
+    const used = new Set(byDifficulty(4).map((q) => q.id));
+    const picked = pickQuestion(pool, used, 4, "seed")!;
+    expect(difficultyOf(picked, skill)).toBe(3);
   });
-  it("treats invalid, missing and injected answers as wrong", () => {
-    const q = issued[0] as Question;
-    const s = scoreAttempt(issued, { [q.id]: 99, "not-issued-q": 0, [issued[1].id]: -1, [issued[2].id]: 1.5 });
-    expect(s.correct).toBe(0);
-    expect(s.total).toBe(6);
-  });
-  it("creates one expiring evidence row per skill", () => {
+
+  it("creates one expiring evidence row per skill, carrying the peak difficulty", () => {
     const at = new Date("2026-09-19T10:00:00Z");
-    const rows = evidenceFromScore(def, scoreAttempt(issued, allRight), { id: "a1", verified: true, completedAt: at });
+    const { score } = run((q) => q.answer);
+    const rows = evidenceFromAdaptive(def, score, { id: "a1", verified: true, completedAt: at });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ skillId: "sql", type: "assessment", source: "skill", score: 100, confidence: "medium", verified: true, refId: "a1" });
+    expect(rows[0]).toMatchObject({ skillId: "sql", type: "assessment", score: 100, verified: true, refId: "a1" });
+    expect(rows[0].detail).toMatchObject({ peakCorrect: 4, scoringVersion: SCORING_VERSION });
     expect(rows[0].expiresAt.getTime()).toBeGreaterThan(at.getTime());
   });
+
   it("verified = in time and within tab-switch tolerance", () => {
     const startedAt = new Date("2026-09-19T10:00:00Z");
     const at = (min: number) => new Date(startedAt.getTime() + min * 60_000);
     expect(isVerified({ startedAt, completedAt: at(9), durationMin: 10, tabSwitches: 0 })).toBe(true);
     expect(isVerified({ startedAt, completedAt: at(12), durationMin: 10, tabSwitches: 0 })).toBe(false);
     expect(isVerified({ startedAt, completedAt: at(9), durationMin: 10, tabSwitches: 9 })).toBe(false);
+  });
+});
+
+describe("the 85% bar: knowledge alone cannot claim industry readiness", () => {
+  const perfect = (skillId: string, over: Partial<EvidenceItem> = {}) =>
+    ev(skillId, 100, { detail: { correct: 6, total: 6, peakCorrect: 4 }, ...over });
+
+  it("caps a perfect paper below the top band", () => {
+    const r = computeReadiness(role, [perfect("manual-testing"), perfect("sql")], { now: NOW });
+    const p = r.perSkill[0];
+    expect(p.level).toBe(KNOWLEDGE_ONLY_CAP);
+    expect(p.cappedFrom).toBe(100);
+    expect(p.explanation).toContain("knowledge, not industry readiness");
+  });
+
+  it("lifts the cap only with practical evidence AND the hardest questions answered", () => {
+    const project = ev("manual-testing", null, { type: "project", source: "project", confidence: "high" });
+    const withProject = computeReadiness(role, [perfect("manual-testing"), project], { now: NOW });
+    expect(withProject.perSkill[0].level).toBe(100);
+    expect(withProject.perSkill[0].cappedFrom).toBeNull();
+
+    // A project cannot rescue someone who never answered a hard question.
+    const shallow = ev("manual-testing", 100, { detail: { correct: 6, total: 6, peakCorrect: 2 } });
+    expect(computeReadiness(role, [shallow, project], { now: NOW }).perSkill[0].level).toBe(KNOWLEDGE_ONLY_CAP);
+  });
+
+  it("accepts a passed interview as the practical evidence", () => {
+    const interview = ev("manual-testing", INTERVIEW_PASS, { type: "interview", source: "interview", confidence: "high" });
+    expect(computeReadiness(role, [perfect("manual-testing"), interview], { now: NOW }).perSkill[0].level).toBe(100);
+    const failed = ev("manual-testing", INTERVIEW_PASS - 1, { type: "interview", source: "interview" });
+    expect(computeReadiness(role, [perfect("manual-testing"), failed], { now: NOW }).perSkill[0].level).toBe(KNOWLEDGE_ONLY_CAP);
+  });
+
+  it("leaves scores below the cap untouched", () => {
+    const r = computeReadiness(role, [ev("manual-testing", 70, { detail: { correct: 4, total: 6, peakCorrect: 3 } })], { now: NOW });
+    expect(r.perSkill[0]).toMatchObject({ level: 70, cappedFrom: null });
+  });
+});
+
+describe("interview", () => {
+  it("asks progressively: warm-up, then core, then probing", () => {
+    const qa = getRole("qa-engineer");
+    for (const id of [`baseline:${qa.id}`, `final:${qa.id}`, "skill:api-testing"]) {
+      const prompts = selectPrompts(getAssessment(id)!, qa);
+      expect(prompts.length, id).toBeGreaterThan(0);
+      const depths = prompts.map((p) => p.depth);
+      expect(depths, id).toEqual([...depths].sort((a, b) => a - b));
+    }
+  });
+  it("asks about the skill just tested, and about the role at the end", () => {
+    const qa = getRole("qa-engineer");
+    expect(selectPrompts(getAssessment("skill:api-testing")!, qa).every((p) => p.skillId === "api-testing")).toBe(true);
+    expect(selectPrompts(getAssessment(`final:${qa.id}`)!, qa).some((p) => p.kind === "technical")).toBe(true);
+  });
+  it("every prompt is well-formed and every skill has one", () => {
+    const ids = new Set(INTERVIEW_PROMPTS.map((p) => p.id));
+    expect(ids.size).toBe(INTERVIEW_PROMPTS.length);
+    for (const p of INTERVIEW_PROMPTS) {
+      expect(Boolean(p.roleId) !== Boolean(p.skillId), p.id).toBe(true);
+      expect(p.lookFor.length, p.id).toBeGreaterThanOrEqual(3);
+      expect(p.minWords, p.id).toBeGreaterThanOrEqual(40);
+    }
+    for (const s of SKILLS) expect(promptsForSkill(s.id).length, s.id).toBeGreaterThanOrEqual(2);
+    for (const r of ROLES) expect(promptsForRole(r.id).length, r.id).toBeGreaterThanOrEqual(5);
+  });
+  it("scores only from the rubric, and an unevaluated answer stays pending", async () => {
+    expect(rubricToScore({ relevance: 4, evidence: 4, structure: 4, communication: 4 }, "behavioural")).toBe(100);
+    expect(rubricToScore({ relevance: 2, evidence: 2, structure: 2, communication: 2 }, "behavioural")).toBe(50);
+    expect(rubricToScore({}, "technical")).toBe(0);
+    expect(interviewScoringAvailable()).toBe(false);
+    const prompt = promptsForSkill("sql")[0];
+    const outcome = await evaluateAnswer({ prompt, answer: "An answer.", words: 2, seconds: 30 });
+    expect(outcome.status).toBe("pending");
   });
 });
 
@@ -324,8 +447,8 @@ describe("projected impact", () => {
   });
   it("recommends re-assessment once evidence is old, before it expires", () => {
     const old = new Date(NOW.getTime() - 320 * 86_400_000);
-    const r = computeReadiness(role, [ev("manual-testing", 90, { createdAt: old, expiresAt: new Date(NOW.getTime() + 86_400_000) })], { now: NOW });
-    expect(r.perSkill[0]).toMatchObject({ reassessRecommended: true, level: 90 });
+    const r = computeReadiness(role, [ev("manual-testing", 70, { createdAt: old, expiresAt: new Date(NOW.getTime() + 86_400_000) })], { now: NOW });
+    expect(r.perSkill[0]).toMatchObject({ reassessRecommended: true, level: 70 });
   });
 });
 
@@ -343,5 +466,160 @@ describe("resume claims", () => {
   it("only claims technical skills — aptitude and communication must be assessed", () => {
     const resume = { ...EMPTY_RESUME, skills: ["Communication", "Logical reasoning", "SQL"] };
     expect(claimedSkills(getRole("data-analyst"), resume)).toEqual(["sql"]);
+  });
+});
+
+describe("practice feedback", () => {
+  const prompt = promptsForRole("qa-engineer").find((p) => p.depth === 2 && p.kind === "behavioural")!;
+  const technical = promptsForSkill("sql")[1];
+  const state = (f: ReturnType<typeof analyseAnswer>, id: string) => f.signals.find((s) => s.id === id)?.state;
+
+  it("flags an answer that is too short", () => {
+    const f = analyseAnswer(prompt, "I worked in a team and it went fine.");
+    expect(state(f, "length")).toBe("bad");
+    expect(f.headline).toContain("too short");
+  });
+
+  it("flags a story with no result", () => {
+    const f = analyseAnswer(
+      prompt,
+      "When I was working on my college project I was responsible for the test plan. I wrote the cases myself and I ran them every evening, and I checked each screen carefully against the requirements document that the team had agreed at the start of the term.",
+    );
+    expect(state(f, "structure")).not.toBe("good");
+  });
+
+  it("flags hiding behind 'we'", () => {
+    const f = analyseAnswer(
+      prompt,
+      "When we built the booking system we found a bug where we double-booked slots. We reproduced it, we checked the logs and we fixed the locking. As a result we shipped on time and we reduced complaints by 40 percent after the release went out to all of the users.",
+    );
+    expect(state(f, "ownership")).toBe("bad");
+    expect(f.signals.find((s) => s.id === "ownership")!.detail).toContain('"I" never');
+  });
+
+  it("flags hedging that makes a right answer sound unsure", () => {
+    const f = analyseAnswer(
+      technical,
+      "I think maybe a LEFT JOIN is basically kind of like an INNER JOIN, sort of, but it probably keeps some rows or something, and the filter is maybe in the WHERE clause or stuff like that depending on what you want from the query really.",
+    );
+    expect(state(f, "confidence")).not.toBe("good");
+  });
+
+  it("recognises a strong, specific answer with a result", () => {
+    const f = analyseAnswer(
+      prompt,
+      "When I was testing our college booking system I found that two people could book the same slot. I reproduced it by opening 2 browsers, then I read the API logs and saw the row was never locked. I wrote a test case for the race and reported it with the log line and a rate of 3 failures in 30 attempts. As a result the fix shipped that week and I re-ran the case 30 times to confirm it held.",
+    );
+    expect(state(f, "structure")).toBe("good");
+    expect(state(f, "ownership")).toBe("good");
+    expect(state(f, "specifics")).toBe("good");
+    expect(state(f, "confidence")).toBe("good");
+  });
+
+  it("asks technical answers for reasoning, not a story", () => {
+    const f = analyseAnswer(technical, "A LEFT JOIN keeps all left rows. An INNER JOIN keeps matching rows. I would use LEFT JOIN for customers with no orders. The syntax differs slightly between the two forms but both are standard SQL and widely supported everywhere.");
+    expect(f.signals.some((s) => s.id === "reasoning")).toBe(true);
+    expect(f.signals.some((s) => s.id === "structure")).toBe(false);
+  });
+
+  it("hedges its own certainty about missing points", () => {
+    const f = analyseAnswer(prompt, "Short answer about nothing in particular at all, just words with no content whatsoever here.");
+    expect(f.possiblyMissing.length).toBeGreaterThan(0);
+    for (const m of f.possiblyMissing) expect(prompt.lookFor).toContain(m);
+  });
+});
+
+describe("interview conversation", () => {
+  const qa = getRole("qa-engineer");
+  const promptIds = promptsForRole(qa.id).slice(0, 3).map((p) => p.id);
+  const base = { promptIds, candidateName: "Priya Nair", roleTitle: qa.title, profileSkills: ["Manual Testing", "Postman"], weakSkills: ["API Testing"] };
+  const say = (transcript: Turn[]) => nextInterviewerTurn({ ...base, transcript });
+  const strong =
+    "When I was testing our college booking system I found that two people could book the same slot. I reproduced it by opening 2 browsers, then I read the API logs and saw the row was never locked. I wrote a test case for the race and reported it with the log line and a rate of 3 failures in 30 attempts. As a result the fix shipped that week and I re-ran it 30 times to confirm.";
+
+  it("opens with a mic check, then introduces itself using the real profile", () => {
+    const hello = say([]);
+    expect(hello.text).toBe("Hello, can you hear me?");
+    expect(hello.promptId).toBeUndefined();
+
+    const opening = say([
+      { speaker: "interviewer", text: "Hello, can you hear me?" },
+      { speaker: "candidate", text: "Yes, I can hear you." },
+    ]);
+    expect(opening.text).toContain("Priya");
+    expect(opening.text).toContain("QA Engineer");
+    expect(opening.text).toContain("Manual Testing");
+    expect(opening.text).toContain("API Testing"); // honest about the weakest area
+    expect(opening.promptId).toBe(promptIds[0]);
+  });
+
+  it("probes the exact weakness instead of moving on", () => {
+    const after = (answer: string) =>
+      say([
+        { speaker: "interviewer", text: "Hello, can you hear me?" },
+        { speaker: "candidate", text: "Yes." },
+        { speaker: "interviewer", text: "...", promptId: promptIds[0] },
+        { speaker: "candidate", text: answer },
+      ]);
+
+    const noOwnership = after(
+      "When we built the booking system we found a bug where we double-booked slots. We reproduced it, we checked the logs and we fixed the locking. As a result we shipped on time and we cut complaints by 40 percent for all of the users.",
+    );
+    expect(noOwnership.probe).toBe(true);
+    expect(noOwnership.text).toContain("What was your part in it");
+
+    expect(after("It went fine.").probe).toBe(true);
+  });
+
+  it("does not interrogate a strong answer about what it already contains", () => {
+    const next = say([
+      { speaker: "interviewer", text: "Hello, can you hear me?" },
+      { speaker: "candidate", text: "Yes." },
+      { speaker: "interviewer", text: "...", promptId: promptIds[0] },
+      { speaker: "candidate", text: strong },
+    ]);
+    // It may ask the question's own follow-up, but never the probes for things it has.
+    expect(next.text).not.toContain("What was your part in it");
+    expect(next.text).not.toContain("Can you put some numbers on that");
+    expect(next.text).not.toContain("And how did it end");
+  });
+
+  it("always reaches the end: every question asked once, then a close", () => {
+    const transcript: Turn[] = [];
+    let turn = say(transcript);
+    const asked: string[] = [];
+    for (let i = 0; i < 40 && !turn.done; i++) {
+      transcript.push({ speaker: "interviewer", text: turn.text, promptId: turn.promptId, probe: turn.probe });
+      if (turn.promptId) asked.push(turn.promptId);
+      transcript.push({ speaker: "candidate", text: strong });
+      turn = say(transcript);
+    }
+    expect(turn.done).toBe(true);
+    expect(asked).toEqual(promptIds);
+  });
+
+  it("only probes once per question", () => {
+    const turns: Turn[] = [
+      { speaker: "interviewer", text: "Hello, can you hear me?" },
+      { speaker: "candidate", text: "Yes." },
+      { speaker: "interviewer", text: "...", promptId: promptIds[0] },
+      { speaker: "candidate", text: "It went fine." },
+      { speaker: "interviewer", text: "Can you give me a concrete example?", probe: true },
+      { speaker: "candidate", text: "Not really, it just went fine." },
+    ];
+    expect(say(turns).promptId).toBe(promptIds[1]);
+  });
+
+  it("collects each question's answer, including what was said to a probe", () => {
+    const answers = answersByPrompt([
+      { speaker: "interviewer", text: "...", promptId: promptIds[0] },
+      { speaker: "candidate", text: "First part." },
+      { speaker: "interviewer", text: "And how did it end?", probe: true },
+      { speaker: "candidate", text: "Second part." },
+      { speaker: "interviewer", text: "...", promptId: promptIds[1] },
+      { speaker: "candidate", text: "Other answer." },
+    ]);
+    expect(answers[promptIds[0]]).toBe("First part. Second part.");
+    expect(answers[promptIds[1]]).toBe("Other answer.");
   });
 });

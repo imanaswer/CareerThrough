@@ -12,6 +12,10 @@ import { getAssessment } from "@/content/assessments";
 import { getSkill, skillName } from "@/content/skills";
 import { getJob } from "@/content/jobs";
 import { liveReadiness, requireCandidate } from "@/lib/data";
+import { interviewResponse } from "@/db";
+import { interviewScoringAvailable } from "@/lib/interview/provider";
+import { getPrompt } from "@/content/interview";
+import { KNOWLEDGE_ONLY_CAP } from "@/lib/readiness";
 
 export const metadata: Metadata = { title: "Assessment result" };
 
@@ -28,6 +32,9 @@ export default async function ResultPage({ params, searchParams }: { params: Pro
   // The recommendation is "what to do now", so it comes from live state, not the stored snapshot.
   const { readiness } = await liveReadiness(user.id, role);
   const nba = readiness.nextActions[0];
+  const interview = await db.select().from(interviewResponse).where(eq(interviewResponse.attemptId, a.id)).orderBy(interviewResponse.createdAt);
+  // Skills where the paper scored above the cap but practical evidence is still missing.
+  const capped = readiness.perSkill.filter((p) => p.cappedFrom !== null && Object.keys(score.bySkill).includes(p.skillId));
   const roleSkill = new Map(role.skills.map((s) => [s.skillId, s]));
   const single = def.kind === "skill";
 
@@ -83,6 +90,53 @@ export default async function ResultPage({ params, searchParams }: { params: Pro
           tone={impact.unlockedJobIds.length ? "up" : "flat"}
         />
       </div>
+
+      {capped.length ? (
+        <Panel title="Why your level is lower than your score">
+          <p className="text-sm text-muted-foreground">
+            You scored above {KNOWLEDGE_ONLY_CAP}% on {capped.length === 1 ? "a skill" : "some skills"}, which is excellent. Multiple-choice
+            questions show knowledge, though, and the top band is reserved for demonstrated ability — so {capped.length === 1 ? "it is" : "they are"} held
+            at {KNOWLEDGE_ONLY_CAP}% for now.
+          </p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {capped.map((p) => (
+              <li key={p.skillId} className="flex justify-between gap-3">
+                <span className="font-medium">{p.name}</span>
+                <span className="tabular-nums text-muted-foreground">scored {p.cappedFrom}% · level {p.level}%</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm">
+            To lift it: <Link href="/plan#project" className="font-medium text-primary hover:underline">submit project evidence</Link> covering the
+            skill, or pass its interview once evaluation is available.
+          </p>
+        </Panel>
+      ) : null}
+
+      {interview.length ? (
+        <Panel title="Interview">
+          <ul className="space-y-3">
+            {interview.map((r) => {
+              const prompt = getPrompt(r.promptId);
+              return (
+                <li key={r.id} className="rounded-xl border p-3">
+                  <p className="text-sm font-medium">{prompt?.prompt ?? r.promptId}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {r.status === "skipped" ? "Skipped" : `${r.words} words`}
+                    {r.score !== null ? ` · scored ${r.score}%` : r.status === "pending" ? " · awaiting evaluation" : ""}
+                  </p>
+                  {r.feedback ? <p className="mt-1 text-sm text-muted-foreground">{r.feedback.summary}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {interviewScoringAvailable()
+              ? "Scored against a fixed rubric. AI assists the evaluation; it never decides job eligibility."
+              : "Your answers are recorded and will be evaluated once interview scoring is connected. Until then they do not change your readiness, and nothing here is marked as passed."}
+          </p>
+        </Panel>
+      ) : null}
 
       <Panel title={single ? "Breakdown by topic" : "Breakdown by skill"}>
         <ul className="space-y-3">

@@ -21,7 +21,7 @@ export function NextMove({ action, upNext, formulaVersion }: { action: NextActio
           <Sparkles className="size-3.5" aria-hidden />
           Your next move
         </p>
-        <h2 id="next-move" className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{action.title}</h2>
+        <h2 id="next-move" className="mt-2 max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl">{action.title}</h2>
 
         {action.current !== null && action.target !== null ? (
           <div className="mt-3 max-w-sm">
@@ -37,7 +37,7 @@ export function NextMove({ action, upNext, formulaVersion }: { action: NextActio
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <div className="mt-5 grid max-w-3xl gap-5 sm:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-white/70">Why now</p>
             <ul className="mt-2 space-y-1 text-sm text-white/90">

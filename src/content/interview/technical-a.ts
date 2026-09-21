@@ -460,7 +460,7 @@ export const prompts: InterviewPrompt[] = [
     prompt:
       "Explain where the time is going and what you would change, then say what your change costs you.",
     lookFor: [
-      "Identifies that `in` on a list is a linear scan, so the work is roughly 200,000 x 50,000 comparisons",
+      "Identifies that an 'in' check against a list is a linear scan, so the work is roughly 200,000 x 50,000 comparisons",
       "Converts registered_list to a set or dict for average constant-time lookups",
       "States the cost honestly: extra memory for the set, and values must be hashable",
       "Raises normalising case or whitespace so equality actually matches, or notes the ordering is lost",

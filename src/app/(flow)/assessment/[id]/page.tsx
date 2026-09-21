@@ -8,12 +8,15 @@ import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { Chip } from "@/components/bits";
 import { attempt, db } from "@/db";
-import { getAssessment, getQuestion } from "@/content/assessments";
+import { getAssessment } from "@/content/assessments";
 import { skillName } from "@/content/skills";
 import { liveReadiness, requireCandidate } from "@/lib/data";
-import { GRACE_SECONDS, MAX_TAB_SWITCHES, RETAKE_COOLDOWN_HOURS, isExpired, toPublic } from "@/lib/assessment";
+import { GRACE_SECONDS, MAX_TAB_SWITCHES, RETAKE_COOLDOWN_HOURS, isExpired } from "@/lib/assessment";
+import { currentView, totalQuestions } from "@/lib/attempt";
+import { selectPrompts } from "@/lib/interview/select";
 import { startAttempt } from "../../../actions";
 import { Runner } from "./runner";
+import { AssessmentCall } from "./call";
 
 export const metadata: Metadata = { title: "Assessment" };
 
@@ -36,16 +39,41 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
     .orderBy(desc(attempt.startedAt))
     .limit(1);
   const now = new Date();
-  const open = last && !last.completedAt;
 
-  if (open && !isExpired(last.startedAt, last.durationMin, now)) {
-    // Answer keys never leave the server: only the public shape is passed to the client.
-    const questions = last.questionIds.map(getQuestion).filter((q) => q !== undefined).map(toPublic);
-    const deadline = last.startedAt.getTime() + last.durationMin * 60_000;
-    return <Runner attemptId={last.id} title={def.title} questions={questions} deadline={deadline} skillNames={Object.fromEntries(def.skillIds.map((s) => [s, skillName(s)]))} />;
+  if (last && !last.completedAt) {
+    // Mid-interview: the knowledge section is already scored and stored.
+    if (last.stage === "interview") {
+      return (
+        <AssessmentCall
+          attemptId={last.id}
+          title="Interviewer"
+          subtitle={`Career Through · ${def.title}`}
+          durationMin={Math.max(10, last.interviewPromptIds.length * 4)}
+        />
+      );
+    }
+    if (!isExpired(last.startedAt, last.durationMin, now)) {
+      // Answer keys never leave the server: only the public shape is passed to the client.
+      const view = currentView(last, def);
+      if (view) {
+        return (
+          <Runner
+            attemptId={last.id}
+            title={def.title}
+            question={view.question}
+            progress={view.progress}
+            deadline={last.startedAt.getTime() + last.durationMin * 60_000}
+            skillNames={Object.fromEntries(def.skillIds.map((s) => [s, skillName(s)]))}
+          />
+        );
+      }
+    }
   }
 
-  const total = def.skillIds.length * def.questionsPerSkill;
+  // An attempt that ran out of time mid-question was never scored and added no evidence.
+  const ranOut = Boolean(last && !last.completedAt && last.stage === "knowledge");
+  const total = totalQuestions(def);
+  const interviewCount = selectPrompts(def, role).length;
   const resultHref = last?.completedAt ? `/assessment/${encodeURIComponent(def.id)}/result?a=${last.id}` : null;
   const cooldownEnds = last?.completedAt ? last.completedAt.getTime() + RETAKE_COOLDOWN_HOURS * 3_600_000 : 0;
 
@@ -63,7 +91,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
       <Chip className="bg-secondary text-secondary-foreground ring-transparent capitalize">{def.kind === "final" ? "Final verification" : `${def.kind} assessment`}</Chip>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight">{def.title}</h1>
 
-      {open ? (
+      {ranOut ? (
         <p role="status" className="mt-4 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
           <TimerOff className="mt-0.5 size-4 shrink-0" aria-hidden />
           Your previous attempt ran out of time before it was submitted, so it was not scored and added no evidence. You can start a fresh attempt.
@@ -71,7 +99,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
       ) : null}
 
       <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl bg-muted/60 p-4"><dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><ListChecks className="size-3.5" aria-hidden />Questions</dt><dd className="mt-1 text-lg font-semibold">{total} multiple choice</dd></div>
+        <div className="rounded-xl bg-muted/60 p-4"><dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><ListChecks className="size-3.5" aria-hidden />Questions</dt><dd className="mt-1 text-lg font-semibold">{total} multiple choice</dd><dd className="text-xs text-muted-foreground">then {interviewCount} interview question{interviewCount === 1 ? "" : "s"}</dd></div>
         <div className="rounded-xl bg-muted/60 p-4"><dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="size-3.5" aria-hidden />Time limit</dt><dd className="mt-1 text-lg font-semibold">{def.durationMin} minutes</dd></div>
         <div className="rounded-xl bg-muted/60 p-4"><dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck className="size-3.5" aria-hidden />Integrity</dt><dd className="mt-1 text-sm font-medium">Verified, tamper-resistant</dd></div>
       </dl>
@@ -92,7 +120,9 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
       <ul className="mt-1 space-y-1 text-sm text-muted-foreground">
         <li>• The timer runs on the server and starts when you click Start. It keeps running if you close the tab.</li>
         <li>• Answers are scored on the server. Your browser never receives the answer key.</li>
-        <li>• Unanswered questions are marked wrong, so answer everything you can before submitting.</li>
+        <li>• Questions adapt: get one right and the next is harder, get one wrong and it steps back. Harder questions are worth more, and you cannot return to a previous one.</li>
+        <li>• Skipped questions are marked wrong.</li>
+        <li>• The interview that follows is written, not timed. It is recorded as evidence of how you explain your work.</li>
         <li>• Tab switches are recorded. More than {MAX_TAB_SWITCHES}, or finishing more than {GRACE_SECONDS}s late, and the result is recorded but not marked verified.</li>
       </ul>
 

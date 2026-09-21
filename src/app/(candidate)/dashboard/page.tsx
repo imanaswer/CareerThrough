@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BadgeCheck, ClipboardCheck, FolderCheck, Lock, LockOpen, Target, TrendingUp } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, FolderCheck, LockOpen, Target, TrendingUp } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { Chip, EmptyState, Gauge, Panel } from "@/components/bits";
@@ -65,6 +65,12 @@ export default async function DashboardPage() {
   const nextBand = role.bands.find((b) => b.min > readiness.score);
   const baselineScore = snapshots.find((s) => s.trigger.startsWith("baseline"))?.score;
   const stale = readiness.perSkill.filter((p) => p.reassessRecommended);
+  // Several snapshots often land on one day, which would repeat the same axis label.
+  const days = new Set(snapshots.map((s) => new Date(s.createdAt).toDateString()));
+  const trend = snapshots.map((s) => ({
+    date: new Date(s.createdAt).toLocaleString("en-IN", days.size > 1 ? { day: "numeric", month: "short" } : { hour: "numeric", minute: "2-digit" }),
+    score: s.score,
+  }));
   const zeroStart = readiness.score === 0;
 
   return (
@@ -77,9 +83,9 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:gap-6">
         <div className="min-w-0 space-y-5">
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2 2xl:gap-6">
             <Panel title="Where do I stand?" action={<ReadinessWhy role={role} readiness={readiness} contentVersion={CONTENT_VERSION} />}>
               <Gauge score={readiness.score} label={`${role.title} readiness`} />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -103,19 +109,61 @@ export default async function DashboardPage() {
               <div className="mt-4 flex justify-center">
                 <WhyNotReady role={role} readiness={readiness} contentVersion={CONTENT_VERSION} />
               </div>
-              <dl className="mt-4 space-y-1.5 border-t pt-4 text-sm">
-                {readiness.dimensions.map((d) => (
-                  <div key={d.dimension} className="flex items-center justify-between gap-2">
-                    <dt className="text-muted-foreground">{DIMENSION_LABELS[d.dimension]}</dt>
-                    <dd className={cn("tabular-nums", d.pct === null && "text-xs text-muted-foreground")}>{d.pct !== null ? `${d.pct}%` : d.note}</dd>
-                  </div>
-                ))}
+              <dl className="mt-5 space-y-3 border-t pt-4">
+                {readiness.dimensions.map((d) => {
+                  const interviewNote =
+                    state.interview.average !== null
+                      ? `${state.interview.average}%`
+                      : state.interview.answered
+                        ? `${state.interview.answered} recorded, awaiting evaluation`
+                        : d.note;
+                  return (
+                    <div key={d.dimension}>
+                      <div className="flex items-baseline justify-between gap-2 text-sm">
+                        <dt className="text-muted-foreground">{DIMENSION_LABELS[d.dimension]}</dt>
+                        <dd className={cn("font-medium tabular-nums", d.pct === null && "text-xs font-normal text-muted-foreground")}>
+                          {d.pct !== null ? `${d.pct}%` : d.dimension === "interview" ? interviewNote : d.note}
+                        </dd>
+                      </div>
+                      {d.pct !== null ? (
+                        <div className="mt-1 h-1.5 rounded-full bg-muted">
+                          <div
+                            className="h-full origin-left rounded-full bg-primary/70 transition-transform duration-700"
+                            style={{ transform: `scaleX(${d.pct / 100})`, width: "100%" }}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </dl>
             </Panel>
 
-            <Panel title={unlock ? "Next unlock" : "Opportunities"}>
+            <Panel
+              title={unlock ? "Next unlock" : "Opportunities"}
+              action={
+                <Link href="/jobs" className="text-xs font-medium text-primary hover:underline">
+                  {unlocked.length} of {matches.length} unlocked →
+                </Link>
+              }
+            >
               {unlock ? (
-                <NextUnlock unlock={unlock} />
+                <>
+                  <NextUnlock unlock={unlock} />
+                  {unlocked.length ? (
+                    <ul className="mt-4 space-y-1.5 border-t pt-3 text-sm">
+                      {unlocked.slice(0, 3).map((m) => (
+                        <li key={m.jobId} className="flex gap-2">
+                          <LockOpen className="mt-0.5 size-3.5 shrink-0 text-emerald-600" aria-hidden />
+                          <span>
+                            {getJob(m.jobId)?.title}
+                            <span className="text-muted-foreground"> · already open</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </>
               ) : (
                 <div className="flex h-full flex-col justify-center text-center">
                   <p className="text-3xl font-semibold tabular-nums">{unlocked.length}</p>
@@ -184,31 +232,10 @@ export default async function DashboardPage() {
             ) : null}
           </Panel>
 
-          <Panel title="Opportunities" action={<Link href="/jobs" className="text-xs font-medium text-primary hover:underline">All →</Link>}>
-            <p className="text-sm">
-              <span className="text-2xl font-semibold tabular-nums">{unlocked.length}</span>
-              <span className="text-muted-foreground"> of {matches.length} unlocked</span>
-            </p>
-            <ul className="mt-3 space-y-2 text-sm">
-              {unlocked.slice(0, 3).map((m) => (
-                <li key={m.jobId} className="flex gap-2">
-                  <LockOpen className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
-                  <span>{getJob(m.jobId)?.title} <span className="text-muted-foreground">· {m.matchPct}% match</span></span>
-                </li>
-              ))}
-              {!unlocked.length ? (
-                <li className="flex gap-2 text-muted-foreground">
-                  <Lock className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  Nothing unlocked yet — the next one is {getJob(unlock?.match.jobId ?? "")?.title ?? "shown above"}.
-                </li>
-              ) : null}
-            </ul>
-          </Panel>
-
           <Panel title="Progress">
             {snapshots.length > 1 ? (
               <>
-                <ReadinessTrend data={snapshots.map((s) => ({ date: new Date(s.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }), score: s.score }))} />
+                <ReadinessTrend data={trend} />
                 <dl className="mt-3 space-y-1.5 text-sm">
                   {baselineScore !== undefined ? (
                     <div className="flex justify-between gap-2">

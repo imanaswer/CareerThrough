@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
-import { attempt, careerEvent, db, evidence, profile, readinessSnapshot } from "@/db";
+import { attempt, careerEvent, db, evidence, interviewResponse, profile, readinessSnapshot } from "@/db";
 import { CONTENT_VERSION } from "@/content/version";
 import { getRole } from "@/content/roles";
 import { jobsForRole } from "@/content/jobs";
@@ -19,7 +19,7 @@ export type Attempt = typeof attempt.$inferSelect;
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export const getUser = cache(async () => {
-  if (!supabaseConfigured) return null;
+  if (!supabaseConfigured()) return null;
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   return data.user;
@@ -109,7 +109,7 @@ export async function recordSnapshot(tx: Tx, userId: string, role: Role, trigger
 
 /** Everything the candidate screens need, in one round of parallel queries. */
 export async function getCandidateState(userId: string, p: Profile, role: Role) {
-  const [live, snapshots, attempts, events] = await Promise.all([
+  const [live, snapshots, attempts, events, interviews] = await Promise.all([
     liveReadiness(userId, role),
     db
       .select({
@@ -134,7 +134,20 @@ export async function getCandidateState(userId: string, p: Profile, role: Role) 
       .select()
       .from(careerEvent)
       .where(and(eq(careerEvent.userId, userId), eq(careerEvent.eventType, "PLAN_DAY_COMPLETED"))),
+    db
+      .select({ status: interviewResponse.status, score: interviewResponse.score })
+      .from(interviewResponse)
+      .where(eq(interviewResponse.userId, userId)),
   ]);
+
+  const interview = {
+    answered: interviews.filter((r) => r.status !== "skipped").length,
+    scored: interviews.filter((r) => r.status === "scored").length,
+    average: (() => {
+      const scores = interviews.map((r) => r.score).filter((n): n is number => n !== null);
+      return scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+    })(),
+  };
 
   const completed = attempts.filter((a) => a.completedAt);
   const baselineDone = completed.some((a) => a.kind === "baseline");
@@ -164,7 +177,7 @@ export async function getCandidateState(userId: string, p: Profile, role: Role) 
 
   const planDone = new Set(events.map((e) => `${e.metadata.skillId}:${e.metadata.day}`));
 
-  return { ...live, snapshots, attempts, completed, baselineDone, hasProject, journey, planDone };
+  return { ...live, snapshots, attempts, completed, baselineDone, hasProject, journey, planDone, interview };
 }
 
 export type CandidateState = Awaited<ReturnType<typeof getCandidateState>>;

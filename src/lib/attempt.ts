@@ -98,7 +98,7 @@ function difficultyLabel(question: Question, attempt: AttemptRow, def: Assessmen
 }
 
 export function scoreAttemptAdaptive(attempt: AttemptRow, def: AssessmentDef): AdaptiveScore {
-  return scoreAdaptive(askedSoFar(attempt), startDifficulty(def.kind), quotaBySkill(def));
+  return scoreAdaptive(askedSoFar(attempt), startDifficulty(def.kind), quotaBySkill(def), attempt.id);
 }
 
 export type NewEvidence = {

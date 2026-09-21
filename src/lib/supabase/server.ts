@@ -3,12 +3,30 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+/**
+ * Read at call time, and prefer the non-public names.
+ *
+ * Next inlines every `process.env.NEXT_PUBLIC_*` during the build, while Vercel
+ * withholds variables marked sensitive until runtime. A sensitive NEXT_PUBLIC_ var
+ * therefore compiles to undefined and the app looks unconfigured in production.
+ * Nothing here runs in the browser, so the server-side names are the right ones.
+ */
+function supabaseUrl() {
+  return process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+
+function supabaseAnonKey() {
+  return process.env.SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
+
+export function supabaseConfigured() {
+  return Boolean(supabaseUrl() && supabaseAnonKey());
+}
 
 /** Cookie-bound client: auth only. Tables are never read through this key. */
 export async function supabaseServer() {
   const store = await cookies();
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  return createServerClient(supabaseUrl()!, supabaseAnonKey()!, {
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => {
@@ -24,7 +42,7 @@ export async function supabaseServer() {
 
 /** Service-role client: private Storage only. Never import from client code. */
 export function supabaseAdmin() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  return createClient(supabaseUrl()!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

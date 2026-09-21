@@ -1,22 +1,43 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/pending";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, signUp, type ActionResult } from "../actions";
+import { resendConfirmation, signIn, signUp, type ActionResult } from "../actions";
 
-export function LoginForm({ next, initialError, initialMode = "in" }: { next?: string; initialError?: string; initialMode?: "in" | "up" }) {
-  const [mode, setMode] = useState<"in" | "up">(initialMode);
+type Mode = "in" | "up";
+
+export function LoginForm({ next, initialError, startMode = "in" }: { next?: string; initialError?: string; startMode?: Mode }) {
+  const [mode, setMode] = useState<Mode>(startMode);
   const [inState, inAction, inPending] = useActionState<ActionResult | null, FormData>(signIn, null);
   const [upState, upAction, upPending] = useActionState<ActionResult | null, FormData>(signUp, null);
+
   const state = mode === "in" ? inState : upState;
   const pending = inPending || upPending;
   const error = state && "error" in state ? state.error : !state ? initialError : undefined;
+  const sent = mode === "up" && upState && "ok" in upState ? upState.message : undefined;
+  const needsConfirmation = Boolean(state && "error" in state && state.needsConfirmation);
+
+  if (sent) {
+    return (
+      <div className="mt-8 rounded-2xl border bg-card p-6 text-center">
+        <span className="mx-auto grid size-11 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+          <CheckCircle2 className="size-5" aria-hidden />
+        </span>
+        <p className="mt-3 font-medium">Check your inbox</p>
+        <p className="mt-1 text-sm text-muted-foreground">{sent}</p>
+        <button onClick={() => setMode("in")} className="mt-4 text-sm font-medium text-primary hover:underline">
+          Back to sign in
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <form action={mode === "in" ? inAction : upAction} className="mt-8 space-y-6">
+    <form id="login-form" action={mode === "in" ? inAction : upAction} className="mt-8 space-y-6">
       <input type="hidden" name="next" value={next ?? ""} />
       <div className="space-y-2">
         <Label htmlFor="email" className="text-foreground/70 ml-1 text-base">Email</Label>
@@ -27,9 +48,9 @@ export function LoginForm({ next, initialError, initialMode = "in" }: { next?: s
         <Input id="password" name="password" type="password" minLength={8} required autoComplete={mode === "in" ? "current-password" : "new-password"} className="h-14 text-base rounded-xl bg-foreground/[0.02] border-foreground/10 focus-visible:ring-primary/20 transition-all px-4" />
       </div>
       {error ? <p role="alert" className="text-sm text-rose-500 bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">{error}</p> : null}
+      {needsConfirmation ? <ResendConfirmation /> : null}
       {state && "ok" in state && state.message ? <p role="status" className="text-sm text-emerald-500 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20">{state.message}</p> : null}
       <Button type="submit" disabled={pending} className="h-14 w-full rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-[0_0_20px_rgba(var(--foreground),0.1)] transition-all font-medium text-lg mt-4">
-        {pending ? <Spinner /> : null}
         {pending ? "Please wait…" : mode === "in" ? "Sign in" : "Create account"}
       </Button>
 
@@ -68,5 +89,32 @@ export function LoginForm({ next, initialError, initialMode = "in" }: { next?: s
         </button>
       </p>
     </form>
+  );
+}
+
+/** Offered only when sign-in failed because the account was never confirmed. */
+function ResendConfirmation() {
+  const [state, action, pending] = useActionState<ActionResult | null, FormData>(resendConfirmation, null);
+  return (
+    <div className="rounded-xl border bg-muted/50 p-3 text-sm">
+      {state && "ok" in state ? (
+        <p role="status" className="text-emerald-700">{state.message}</p>
+      ) : (
+        <>
+          <p className="text-muted-foreground">We can send the confirmation link again.</p>
+          {state && "error" in state ? <p role="alert" className="mt-1 text-rose-600">{state.error}</p> : null}
+          <Button
+            type="submit"
+            form="login-form"
+            formAction={action}
+            variant="outline"
+            disabled={pending}
+            className="mt-2 h-9"
+          >
+            {pending ? "Sending…" : "Resend confirmation email"}
+          </Button>
+        </>
+      )}
+    </div>
   );
 }

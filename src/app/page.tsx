@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check, BarChart3, Bug, Infinity as InfinityIcon, LayoutTemplate, Server, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
@@ -13,19 +13,92 @@ import { CtaSection } from "@/components/cta-section";
 import { HeroMockup } from "@/components/hero-mockup";
 import { FloatingIcons } from "@/components/floating-icons";
 import { ROLES } from "@/content/roles";
-import { skillName } from "@/content/skills";
+import { SKILLS, skillName } from "@/content/skills";
 import { jobsForRole } from "@/content/jobs";
+import { CONTENT_VERSION } from "@/content/version";
+import { computeReadiness, type EvidenceItem } from "@/lib/readiness";
+import { matchJobs } from "@/lib/matching";
 
-const STEPS = [
-  { icon: Compass, title: "Choose the role", body: "Start from the job you want, not a list of courses. See exactly what it requires." },
-  { icon: ClipboardCheck, title: "Prove where you stand", body: "Add your real profile and take a baseline. Resume claims are not proof — evidence is." },
-  { icon: Target, title: "See your gaps, explained", body: "A readiness score you can interrogate: every number links to the evidence behind it." },
-  { icon: Route, title: "Do what you need, not everything", body: "A next best action and short plans for your gaps only. Skip what you've already shown." },
-  { icon: BadgeCheck, title: "Earn your Career Card", body: "A verified career identity — assessed skills, projects and freshness. You control who sees it." },
-  { icon: Briefcase, title: "Unlock opportunities", body: "Jobs open up as your evidence grows, and locked ones tell you exactly what is missing." },
+/**
+ * Each role owns one colour, used for its tab, its card and its accents. That is the
+ * rule for colour on this page: the indigo brand for everything shared, a role's own
+ * hue wherever that role is the subject.
+ */
+const ROLE_STYLE: Record<string, { hue: string; tint: string; short: string; icon: LucideIcon }> = {
+  "data-analyst": { hue: "#2563eb", tint: "bg-blue-50", short: "Data", icon: BarChart3 },
+  "frontend-developer": { hue: "#db2777", tint: "bg-pink-50", short: "Frontend", icon: LayoutTemplate },
+  "backend-developer": { hue: "#7c3aed", tint: "bg-violet-50", short: "Backend", icon: Server },
+  "qa-engineer": { hue: "#059669", tint: "bg-emerald-50", short: "QA", icon: Bug },
+  "devops-engineer": { hue: "#ea580c", tint: "bg-orange-50", short: "DevOps", icon: InfinityIcon },
+};
+
+/**
+ * A sample candidate, used only to demonstrate the product on the landing page.
+ * The levels below are illustrative; everything derived from them (readiness, gaps,
+ * which opportunities open) is produced by the same engines the app runs on, so the
+ * preview cannot drift away from how the product actually behaves.
+ */
+const SAMPLE_LEVELS = [17, 33, 17, 67, 67, 17, 50, 50, 83, 67, 50, 33];
+
+function demoFor(role: (typeof ROLES)[number]): DemoRole {
+  const now = new Date();
+  const evidence: EvidenceItem[] = role.skills.map((rs, i) => ({
+    id: `sample-${rs.skillId}`,
+    skillId: rs.skillId,
+    type: "assessment",
+    source: "skill",
+    refId: null,
+    url: null,
+    score: SAMPLE_LEVELS[i % SAMPLE_LEVELS.length],
+    confidence: "medium",
+    verified: true,
+    detail: { correct: 4, total: 6, peakCorrect: 3 },
+    createdAt: now,
+    expiresAt: null,
+  }));
+
+  const jobs = jobsForRole(role.id);
+  const readiness = computeReadiness(role, evidence, { jobs, now });
+  const matches = matchJobs(jobs, role, readiness);
+  const locked = matches
+    .filter((m) => !m.unlocked && m.blockers.length)
+    .sort((a, b) => a.blockers.length - b.blockers.length || b.matchPct - a.matchPct)[0];
+  const lockedJob = locked ? jobs.find((j) => j.id === locked.jobId) : undefined;
+  const style = ROLE_STYLE[role.id];
+
+  return {
+    id: role.id,
+    slug: role.slug,
+    title: role.title,
+    short: style.short,
+    hue: style.hue,
+    score: readiness.score,
+    band: readiness.band.label,
+    skills: readiness.perSkill.slice(0, 5).map((p) => ({ name: p.name, level: p.level, target: p.target, meets: p.gap >= 0 })),
+    criticalGaps: readiness.gaps.critical.length,
+    unlocked: matches.filter((m) => m.unlocked).length,
+    totalJobs: matches.length,
+    nextJob: lockedJob && locked ? { title: lockedJob.title, company: lockedJob.company, blocker: locked.blockers[0].message } : null,
+  };
+}
+
+const LOOP = [
+  { icon: Compass, title: "Pick the role", body: "Start from the job you want. Its skills, targets and thresholds come with it." },
+  { icon: Target, title: "See where you stand", body: "An adaptive test that gets harder as you get it right, so the score means something." },
+  { icon: Sparkles, title: "Close what matters", body: "One action at a time, picked by what blocks the most opportunities." },
+  { icon: BadgeCheck, title: "Prove it, get access", body: "Evidence opens real roles. Locked ones say exactly what is missing." },
+];
+
+const LADDER = [
+  { cap: 30, label: "You said you know it", detail: "A claim on a resume. Capped here until something backs it up.", bar: "bg-slate-300" },
+  { cap: 84, label: "You passed the test", detail: "Adaptive and timed. The hard questions are worth more than the easy ones.", bar: "bg-primary/60" },
+  { cap: 100, label: "You did the work", detail: "A project, or an interview on the skill. Nothing else reaches the top band.", bar: "bg-primary" },
 ];
 
 export default function Home() {
+  const demos = ROLES.map(demoFor);
+  const ticker = SKILLS.filter((s) => s.dimension === "technical").map((s) => s.name);
+
   return (
     <>
       <SiteHeader />
@@ -141,6 +214,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+            </div>
+          </div>
+        </section>
 
         {/* REDESIGNED SCORE SECTION - ACCORDION */}
         <EvidenceScaleAccordion />
@@ -149,9 +225,8 @@ export default function Home() {
         <CtaSection />
 
       </main>
-      
       {/* PREMIUM CINEMATIC FOOTER - SINGLE LINE */}
-      <footer className="relative w-full bg-background py-8 overflow-hidden">
+      <footer className="relative w-full bg-background py-8 overflow-hidden border-t">
         {/* Glowing top border */}
         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
         
@@ -160,7 +235,7 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 flex justify-center text-center">
           <p className="text-[11px] sm:text-xs font-mono tracking-widest text-foreground/40 hover:text-foreground/60 transition-colors duration-300">
-            Career Through &middot; Openings shown here are sample listings used to demonstrate readiness-based matching &middot; Content 2026.09.1
+            Career Through &middot; Openings shown here are sample listings used to demonstrate readiness-based matching &middot; Content {CONTENT_VERSION}
           </p>
         </div>
       </footer>
