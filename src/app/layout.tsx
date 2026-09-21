@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
+import { SmoothScrolling } from "@/components/lenis-provider";
+import { CustomCursor } from "@/components/custom-cursor";
+import { Preloader } from "@/components/preloader";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
+const outfit = Outfit({ variable: "--font-heading", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "Career Through — Choose the role. Prove you're ready.", template: "%s · Career Through" },
@@ -12,8 +16,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+    <html lang="en" className={`${inter.variable} ${outfit.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full bg-background text-foreground">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Preloader />
+          <SmoothScrolling>
+            <CustomCursor />
+            {children}
+          </SmoothScrolling>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

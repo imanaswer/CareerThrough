@@ -19,11 +19,12 @@ export function CareerCard({ name, headline, role, readiness, evidence, status, 
   const verifiedCount = readiness.perSkill.filter((p) => p.assessed).length;
 
   return (
-    <article className="card-soft overflow-hidden">
-      <header className="surface-hero grid gap-6 p-7 sm:grid-cols-[1fr_220px] sm:p-9">
-        <div>
+    <article className="card-soft overflow-hidden group">
+      <header className="relative grid gap-6 p-7 sm:grid-cols-[1fr_220px] sm:p-9">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50 transition-opacity group-hover:opacity-100" />
+        <div className="relative z-10">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white/80"><ShieldCheck className="size-3.5" aria-hidden />Career Through · Verified career identity</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">{name}</h1>
+          <h1 className="mt-3 text-4xl font-medium tracking-tight text-white">{name}</h1>
           {headline ? <p className="mt-1 text-white/85">{headline}</p> : null}
           <p className="mt-4 text-sm text-white/80">Target role</p>
           <p className="text-xl font-semibold">{role.title}</p>
@@ -35,7 +36,7 @@ export function CareerCard({ name, headline, role, readiness, evidence, status, 
         <Gauge score={readiness.score} label="Career readiness" light />
       </header>
 
-      <dl className="grid grid-cols-2 divide-x divide-y border-b sm:grid-cols-4 sm:divide-y-0">
+      <dl className="grid grid-cols-2 divide-x divide-white/5 border-b border-white/5 sm:grid-cols-4 sm:divide-y-0">
         <div className="p-4">
           <dt className="text-xs uppercase tracking-wider text-muted-foreground">Verified skills</dt>
           <dd className="mt-1 text-xl font-semibold tabular-nums">{verifiedCount}<span className="text-sm font-normal text-muted-foreground"> / {readiness.perSkill.length}</span></dd>
@@ -56,17 +57,17 @@ export function CareerCard({ name, headline, role, readiness, evidence, status, 
 
       <div className="grid gap-8 p-7 sm:p-9 lg:grid-cols-2">
         <section>
-          <h2 className="text-sm font-semibold">Role-specific skills</h2>
+          <h2 className="text-sm font-medium text-white/90">Role-specific skills</h2>
           <ul className="mt-3 space-y-4">{technical.map((p) => <CardSkill key={p.skillId} p={p} />)}</ul>
         </section>
         <div className="space-y-8">
           <section>
-            <h2 className="text-sm font-semibold">Aptitude, communication & workplace</h2>
+            <h2 className="text-sm font-medium text-white/90">Aptitude, communication & workplace</h2>
             <ul className="mt-3 space-y-4">{other.map((p) => <CardSkill key={p.skillId} p={p} />)}</ul>
             <p className="mt-3 text-xs text-muted-foreground">Interview readiness: not yet assessed.</p>
           </section>
           <section>
-            <h2 className="text-sm font-semibold">Project evidence</h2>
+            <h2 className="text-sm font-medium text-white/90">Project evidence</h2>
             {project ? (
               <p className="mt-2 flex items-start gap-2 text-sm"><FolderGit2 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden /><span>{project.detail?.title}<br /><a href={project.url ?? "#"} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-primary hover:underline">{project.url}</a><span className="block text-xs text-muted-foreground">Submitted {shortDate(project.createdAt)} · link {project.detail?.status === "recorded" ? "validated" : "validation pending"} · not human-reviewed</span></span></p>
             ) : <p className="mt-2 text-sm text-muted-foreground">No project on record.</p>}
@@ -74,7 +75,7 @@ export function CareerCard({ name, headline, role, readiness, evidence, status, 
         </div>
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/40 px-7 py-4 text-xs text-muted-foreground sm:px-9">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 bg-white/[0.02] px-7 py-4 text-xs text-muted-foreground sm:px-9">
         <span className="flex items-center gap-1.5"><BadgeCheck className="size-3.5 text-primary" aria-hidden />{verifiedCount} of {readiness.perSkill.length} skills backed by verified, tamper-resistant assessments</span>
         <span>{stale.length ? `${stale.length} skill${stale.length === 1 ? "" : "s"} due for reassessment · ` : ""}{lastVerified ? `Last verified ${shortDate(lastVerified)}` : "Not yet verified"}{issuedAt ? ` · Issued ${shortDate(issuedAt)}` : ""} · {readiness.formulaVersion}</span>
       </footer>
@@ -86,7 +87,7 @@ function CardSkill({ p }: { p: Readiness["perSkill"][number] }) {
   return (
     <li>
       <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="font-medium">{p.name}</span>
+        <span className="font-medium text-white/90">{p.name}</span>
         <span className="flex items-center gap-2 tabular-nums">
           <span className="font-semibold">{p.level}%</span>
           <span className={cn("text-xs", p.assessed && p.gap >= 0 ? "text-emerald-700" : "text-muted-foreground")}>{p.assessed ? (p.gap >= 0 ? "✓ Verified" : "Developing") : "Unverified"}</span>

@@ -1,24 +1,17 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  BarChart3,
-  Bug,
-  Compass,
-  Infinity as InfinityIcon,
-  LayoutTemplate,
-  Lock,
-  Server,
-  ShieldCheck,
-  Sparkles,
-  Target,
-  type LucideIcon,
-} from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Compass, Briefcase, Route, ShieldCheck, Target, ArrowRight, Check, BarChart3, Bug, Infinity as InfinityIcon, LayoutTemplate, Server, Sparkles, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
-import { Blobs, FloatingGlyphs, LoopPath } from "@/components/landing/decor";
-import { RoleDemo, type DemoRole } from "@/components/landing/role-demo";
+import { Chip } from "@/components/bits";
+import { HeroButtons } from "@/components/hero-buttons";
+import { TiltCard } from "@/components/tilt-card";
+import { CinematicText } from "@/components/cinematic-text";
+import { ScrollReveal } from "@/components/scroll-reveal";
+import { EvidenceScaleAccordion } from "@/components/evidence-scale-accordion";
+import { CtaSection } from "@/components/cta-section";
+import { HeroMockup } from "@/components/hero-mockup";
+import { FloatingIcons } from "@/components/floating-icons";
 import { ROLES } from "@/content/roles";
 import { SKILLS, skillName } from "@/content/skills";
 import { jobsForRole } from "@/content/jobs";
@@ -109,226 +102,140 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <main>
-        <section className="relative overflow-hidden border-b">
-          <Blobs />
-          <FloatingGlyphs />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:pt-20">
-            <div>
-              <span
-                className="rise inline-flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20 backdrop-blur"
-                style={{ ["--i" as string]: 0 }}
-              >
-                <Sparkles className="size-3.5" aria-hidden />
-                Not a course platform
-              </span>
-              <h1
-                className="rise mt-5 text-[2.4rem] font-semibold leading-[1.04] tracking-tight text-balance sm:text-5xl lg:text-[3.25rem] xl:text-[3.6rem]"
-                style={{ ["--i" as string]: 1 }}
-              >
-                Choose the role.
-                <br />
-                Prove you&apos;re ready.
-                <br />
-                <span className="shine">Get access.</span>
-              </h1>
-              <p className="rise mt-6 max-w-md text-lg text-muted-foreground" style={{ ["--i" as string]: 2 }}>
-                Know how ready you are for a specific job, why, and what to fix next.
-              </p>
-              <div className="rise mt-8 flex flex-wrap gap-3" style={{ ["--i" as string]: 3 }}>
-                <Link
-                  href="#roles"
-                  className={cn(buttonVariants(), "group h-12 px-7 text-base shadow-lg shadow-primary/25 transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0")}
-                >
-                  Explore roles
-                  <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden />
-                </Link>
-                <Link
-                  href="#how"
-                  className={cn(buttonVariants({ variant: "outline" }), "h-12 bg-background/70 px-7 text-base backdrop-blur transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0")}
-                >
-                  How it works
-                </Link>
-              </div>
-            </div>
+      <main className="relative flex flex-col items-center overflow-clip selection:bg-primary/30">
+        
+        {/* Background Effects */}
+        <div className="hero-glow" />
+        <div className="absolute top-0 -z-10 h-[100vh] w-full bg-[radial-gradient(ellipse_at_top_right,oklch(0.65_0.25_290/0.15),transparent_60%)]" />
 
-            <div className="rise lg:rotate-[0.6deg] lg:transition-transform lg:duration-500 lg:hover:rotate-0" style={{ ["--i" as string]: 4 }}>
-              <RoleDemo roles={demos} />
-            </div>
-          </div>
-        </section>
-
-        <section className="marquee overflow-hidden border-b bg-card py-3.5" aria-hidden>
-          <div className="marquee-track gap-3">
-            {[...ticker, ...ticker].map((name, i) => (
-              <span
-                key={`${name}-${i}`}
-                className="whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm text-muted-foreground"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section id="roles" className="scroll-mt-20 py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="reveal text-3xl font-semibold tracking-tight sm:text-4xl">Pick your target role</h2>
-            <p className="reveal mt-2 max-w-xl text-muted-foreground">
-              Five complete tracks. Each brings its own skills, targets, assessments and openings.
+        {/* HERO SECTION - SPLIT SCREEN */}
+        <section className="relative mx-auto flex min-h-[95vh] w-full max-w-7xl flex-col justify-center px-4 pt-24 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-12 lg:pt-0">
+          
+          {/* Left Column: Typography & Actions */}
+          <div className="flex w-full flex-col items-start gap-6 lg:w-[45%] z-20">
+            <Chip className="border-foreground/10 bg-foreground/5 backdrop-blur-md text-foreground">Not a course platform</Chip>
+            
+            <h1 className="flex flex-col text-5xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+              <CinematicText text="Choose the role." delay={2.2} />
+              <CinematicText text="Prove you're ready." className="opacity-50" delay={2.6} />
+              <CinematicText text="Get access." className="text-gradient-primary font-semibold" delay={3.0} />
+            </h1>
+            
+            <p className="mt-4 max-w-xl text-lg font-light text-muted-foreground sm:text-xl">
+              Know how ready you are for a specific job, why, and what to fix next.
             </p>
-            <div className="reveal-stagger mt-9 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {ROLES.map((role, i) => {
-                const demo = demos[i];
-                const style = ROLE_STYLE[role.id];
-                const Icon = style.icon;
-                const critical = role.skills.filter((s) => s.priority === "critical");
+            
+            <div className="mt-4 w-full max-w-sm">
+              <HeroButtons />
+            </div>
+          </div>
+
+          {/* Right Column: Floating Mockup */}
+          <div className="mt-16 flex w-full justify-center lg:mt-0 lg:w-[55%] lg:justify-end z-10">
+            <ScrollReveal delay={0.5}>
+              <FloatingIcons>
+                <HeroMockup />
+              </FloatingIcons>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        {/* ROLES SECTION */}
+        <section id="roles" className="relative w-full scroll-mt-20 py-32">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="flex flex-col items-center text-center">
+              <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-5xl">Pick your target role</h2>
+              <p className="mt-4 max-w-xl text-muted-foreground">Five complete role tracks. Each has its own skills, targets, assessments and opportunities.</p>
+            </div>
+            
+            <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {ROLES.map((role, index) => {
+                const jobs = jobsForRole(role.id);
+                const core = role.skills.filter((s) => s.priority === "critical");
                 return (
-                  <article
-                    key={role.id}
-                    className="card-soft group relative flex flex-col overflow-hidden p-6 transition-[transform,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-xl"
-                  >
-                    <span
-                      aria-hidden
-                      className="absolute -right-10 -top-10 size-28 rounded-full opacity-15 transition-transform duration-500 group-hover:scale-150"
-                      style={{ backgroundColor: style.hue }}
-                    />
-                    <span className={cn("grid size-11 place-items-center rounded-2xl", style.tint)} style={{ color: style.hue }}>
-                      <Icon className="size-5" aria-hidden />
-                    </span>
-                    <h3 className="mt-4 text-lg font-semibold">{role.title}</h3>
-                    <p className="mt-1 flex-1 text-sm text-muted-foreground">{role.tagline}</p>
-                    <div className="mt-4 flex flex-wrap gap-1.5">
-                      {critical.map((s) => (
-                        <span key={s.skillId} className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                          {skillName(s.skillId)}
-                        </span>
-                      ))}
+                  <ScrollReveal key={role.id} index={index}>
+                    <TiltCard className="card-soft group flex flex-col p-8">
+                      <h3 className="text-2xl font-medium text-foreground">{role.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{role.tagline}</p>
+                    
+                    <div className="mt-8">
+                      <p className="text-xs font-medium uppercase tracking-widest text-primary">Critical Skills</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {core.map((s) => (
+                          <span key={s.skillId} className="rounded-md border border-foreground/10 bg-foreground/5 px-2.5 py-1 text-xs text-foreground/80">
+                            {skillName(s.skillId)}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <dl className="mt-5 grid grid-cols-3 gap-2 border-t pt-4 text-center">
-                      <div>
-                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Skills</dt>
-                        <dd className="text-lg font-semibold tabular-nums">{role.skills.length}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Openings</dt>
-                        <dd className="text-lg font-semibold tabular-nums">{demo.totalJobs}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Ready at</dt>
-                        <dd className="text-lg font-semibold tabular-nums">{role.readyThreshold}%</dd>
-                      </div>
-                    </dl>
-                    <Link
-                      href={`/roles/${role.slug}`}
-                      className="mt-5 inline-flex h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5"
-                      style={{ backgroundColor: style.hue }}
-                    >
-                      View role
-                      <ArrowRight className="size-4" aria-hidden />
+                    
+                    <div className="mt-8 flex-1 space-y-3 border-t border-foreground/10 pt-6 text-sm">
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Assessed on</span><span className="text-right text-foreground/90">{role.skills.length} skills</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Sample Jobs</span><span className="text-right text-foreground/90">{jobs.slice(0, 1).map((j) => j.title).join(", ")} +more</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">Typical journey</span><span className="text-right text-foreground/90">{role.journeyEstimate.split(" from")[0]}</span></div>
+                    </div>
+                    
+                    <Link href={`/roles/${role.slug}`} className="relative z-10 mt-8 inline-flex h-12 w-full items-center justify-center rounded-xl bg-foreground/10 font-medium text-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      View full track
                     </Link>
-                  </article>
+                    </TiltCard>
+                  </ScrollReveal>
                 );
               })}
             </div>
           </div>
         </section>
 
-        <section id="how" className="dotfield scroll-mt-20 border-y bg-muted/30 py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 className="reveal text-3xl font-semibold tracking-tight sm:text-4xl">One loop, from goal to offer</h2>
-            <p className="reveal mt-2 max-w-xl text-muted-foreground">
-              Learning only counts when it produces evidence. That is the whole design.
-            </p>
-
-            <div className="relative mt-12">
-              <LoopPath />
-              <ol className="reveal-stagger relative grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-                {LOOP.map(({ icon: Icon, title, body }, i) => (
-                  <li key={title} className="group">
-                    <span className="grid size-12 place-items-center rounded-2xl bg-background text-primary shadow-sm ring-1 ring-primary/15 transition-transform duration-300 group-hover:-translate-y-1">
-                      <Icon className="size-5" aria-hidden />
-                    </span>
-                    <p className="mt-4 text-xs font-semibold tabular-nums text-primary/70">0{i + 1}</p>
-                    <h3 className="mt-1 font-semibold">{title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-                  </li>
-                ))}
-              </ol>
+        {/* PROCESS SECTION */}
+        <section id="how" className="relative w-full scroll-mt-20 overflow-hidden border-t border-foreground/10 bg-foreground/[0.02] py-32">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+          
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mb-16 md:w-1/2">
+              <h2 className="text-3xl font-medium tracking-tight text-foreground sm:text-5xl">One continuous loop.</h2>
+              <p className="mt-4 text-lg text-muted-foreground">From setting a goal to landing the opportunity, everything is connected and evidence-based.</p>
             </div>
-          </div>
-        </section>
-
-        <section className="py-20">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:items-center">
-            <div>
-              <h2 className="reveal text-3xl font-semibold tracking-tight sm:text-4xl">A score you can argue with</h2>
-              <p className="reveal mt-4 text-lg text-muted-foreground">
-                Saying you know something is worth 30. Proving it on paper is worth 84. The top band is reserved for work you
-                have actually done, so nobody arrives there by being good at quizzes.
-              </p>
-              <p className="reveal mt-3 text-muted-foreground">
-                Every number opens up: the evidence behind it, the target it is measured against, and what it takes to move.
-              </p>
-              <Link href="#roles" className={cn(buttonVariants({ variant: "outline" }), "reveal mt-7 h-11 px-6 text-base")}>
-                Start with a role
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-            </div>
-
-            <ul className="reveal-stagger space-y-3">
-              {LADDER.map((row) => (
-                <li key={row.cap} className="card-soft p-5 transition-transform duration-300 hover:-translate-y-1">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-medium">{row.label}</p>
-                    <p className="text-3xl font-semibold tabular-nums">
-                      {row.cap}
-                      <span className="text-sm font-normal text-muted-foreground">%</span>
-                    </p>
+            
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {LOOP.map(({ icon: Icon, title, body }, i) => (
+                <ScrollReveal key={title} index={i}>
+                  <div className="card-soft flex h-full flex-col p-8">
+                    <div className="flex items-center gap-4">
+                      <div className="grid size-12 place-items-center rounded-full bg-primary/20 text-primary ring-1 ring-primary/30">
+                        <Icon className="size-5" aria-hidden />
+                      </div>
+                      <span className="font-mono text-sm text-muted-foreground">0{i + 1}</span>
+                    </div>
+                    <h3 className="mt-6 text-xl font-medium text-foreground">{title}</h3>
+                    <p className="mt-3 leading-relaxed text-muted-foreground">{body}</p>
                   </div>
-                  <div className="mt-3 h-2.5 rounded-full bg-muted">
-                    <div
-                      className={cn("h-full origin-left rounded-full transition-transform duration-700", row.bar)}
-                      style={{ transform: `scaleX(${row.cap / 100})`, width: "100%" }}
-                    />
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{row.detail}</p>
-                </li>
+                </ScrollReveal>
               ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="px-4 pb-20 sm:px-6">
-          <div className="surface-hero reveal relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] px-8 py-16 text-center sm:px-12">
-            <span aria-hidden className="blob left-[-6%] top-[-40%] size-72 bg-white/25" />
-            <span aria-hidden className="blob right-[-4%] bottom-[-50%] size-80 bg-fuchsia-300/30" />
-            <div className="relative">
-              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Find out where you actually stand</h2>
-              <p className="mx-auto mt-4 max-w-lg text-white/90">
-                Pick a role, take the baseline, and see your readiness with the evidence behind it.
-              </p>
-              <Link
-                href="#roles"
-                className={cn(buttonVariants(), "mt-8 h-12 bg-white px-8 text-base text-primary transition-transform duration-150 hover:-translate-y-0.5 hover:bg-white active:translate-y-0")}
-              >
-                Explore roles
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-              <p className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/80">
-                <span className="flex items-center gap-1.5"><ShieldCheck className="size-4" aria-hidden />Evidence before claims</span>
-                <span className="flex items-center gap-1.5"><Lock className="size-4" aria-hidden />Eligibility is rule-based, never AI</span>
-                <span className="flex items-center gap-1.5"><BadgeCheck className="size-4" aria-hidden />Every score traces to evidence</span>
-              </p>
             </div>
           </div>
         </section>
-      </main>
 
-      <footer className="border-t py-8">
-        <p className="mx-auto max-w-6xl px-4 text-center text-sm text-muted-foreground sm:px-6">
-          Career Through · Openings shown here are sample listings used to demonstrate readiness-based matching · content {CONTENT_VERSION}
-        </p>
+
+        {/* REDESIGNED SCORE SECTION - ACCORDION */}
+        <EvidenceScaleAccordion />
+
+        {/* REDESIGNED CTA SECTION - EDITORIAL GRID */}
+        <CtaSection />
+
+      </main>
+      {/* PREMIUM CINEMATIC FOOTER - SINGLE LINE */}
+      <footer className="relative w-full bg-background py-8 overflow-hidden border-t">
+        {/* Glowing top border */}
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
+        
+        {/* Subtle background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[600px] h-[100px] bg-primary/5 blur-[50px] rounded-full pointer-events-none" />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 flex justify-center text-center">
+          <p className="text-[11px] sm:text-xs font-mono tracking-widest text-foreground/40 hover:text-foreground/60 transition-colors duration-300">
+            Career Through &middot; Openings shown here are sample listings used to demonstrate readiness-based matching &middot; Content {CONTENT_VERSION}
+          </p>
+        </div>
       </footer>
     </>
   );
