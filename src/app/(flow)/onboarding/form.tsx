@@ -38,9 +38,9 @@ function YearSelect({ value, onChange }: { value: string, onChange: (v: string) 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-auto rounded-md border border-foreground/10 bg-background/95 backdrop-blur-md shadow-lg animate-in fade-in-0 zoom-in-95">
+          <div className="absolute left-0 top-full z-50 mt-2 max-h-60 w-full overflow-auto rounded-md border border-border bg-card shadow-xl animate-in fade-in-0 zoom-in-95">
             {years.map((y) => (
-              <button key={y} type="button" onClick={() => { onChange(y.toString()); setOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center py-2 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-primary/10 hover:text-primary">
+              <button key={y} type="button" onClick={() => { onChange(y.toString()); setOpen(false); }} className="relative flex w-full cursor-pointer select-none items-center py-2 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-muted focus:bg-muted text-card-foreground">
                 <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center text-primary">
                   {value === y.toString() && <Check className="h-4 w-4" />}
                 </span>
@@ -188,8 +188,8 @@ export function OnboardingForm({ initial, hasExisting, baselineHref }: { initial
         </div>
       </section>
 
-      {(Object.keys(FIELDS) as ListKey[]).map((key) => (
-        <section key={key} className="card-soft space-y-4 p-6 sm:p-8">
+      {(Object.keys(FIELDS) as ListKey[]).map((key, sectionIndex) => (
+        <section key={key} className="card-soft relative space-y-4 p-6 sm:p-8" style={{ zIndex: 30 - sectionIndex }}>
           <div className="flex items-center justify-between border-b border-foreground/5 pb-4">
             <h2 className="text-lg font-medium capitalize text-foreground">{key}</h2>
             <Button type="button" variant="outline" size="sm" className="h-9 rounded-lg" onClick={() => setResume((r) => ({ ...r, [key]: [...r[key], BLANK[key]] }))}><Plus className="mr-1.5 size-4" aria-hidden /> Add</Button>
