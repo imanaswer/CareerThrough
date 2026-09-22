@@ -162,6 +162,10 @@
                 radial-gradient(circle at bottom left, oklch(0.4 0.2 250/0.4), transparent 60%);
     pointer-events: none;
   }
+  /* Overlay is decorative: keep it behind the content, not veiling the text. */
+  .surface-hero > * {
+    position: relative;
+  }
 
   /* Reusable glassmorphic cards */
   .card-soft {
