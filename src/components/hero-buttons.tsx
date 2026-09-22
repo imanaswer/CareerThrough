@@ -28,7 +28,7 @@ export function HeroButtons() {
           onClick={(e) => handleScroll(e, "#how")}
           className={cn(
             buttonVariants({ variant: "outline", size: "lg" }),
-            "h-12 rounded-full border-white/10 bg-white/5 px-8 text-base backdrop-blur-md hover:bg-white/10 hover:text-white"
+            "h-12 rounded-full border-foreground/10 bg-foreground/5 px-8 text-base backdrop-blur-md transition-all hover:scale-105 hover:bg-foreground/10 hover:text-foreground active:scale-95"
           )}
         >
           How it works

@@ -8,8 +8,10 @@ import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { SignOut } from "./sign-out";
+import type { User } from "@supabase/supabase-js";
 
-export function ClientHeader({ user }: { user: any }) {
+export function ClientHeader({ user }: { user: User | null }) {
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const pathname = usePathname();
@@ -45,11 +47,12 @@ export function ClientHeader({ user }: { user: any }) {
         <nav className="flex items-center gap-4 text-sm font-medium">
           <Link href="/#roles" onClick={(e) => handleScroll(e, "#roles")} className="text-muted-foreground transition-colors hover:text-foreground hidden sm:block">Roles</Link>
           <Link href="/#how" onClick={(e) => handleScroll(e, "#how")} className="text-muted-foreground transition-colors hover:text-foreground hidden sm:block">How it works</Link>
-          <div className="h-4 w-px bg-border/40 hidden sm:block mx-2" />
+          <div className="h-4 w-px bg-foreground/20 hidden sm:block mx-2" />
           <ThemeToggle />
           <Link href={user ? "/dashboard" : "/login"} className={cn(buttonVariants({ size: "sm" }), "rounded-full bg-foreground text-background hover:bg-foreground/90")}>
             {user ? "Dashboard" : "Sign in"}
           </Link>
+          {user && <SignOut variant="compact" />}
         </nav>
       </div>
     </motion.header>

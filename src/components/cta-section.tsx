@@ -5,6 +5,11 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export function CtaSection() {
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, target: string) => {
+    e.preventDefault();
+    document.querySelector(target)?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="relative w-full bg-background py-32 sm:py-40 overflow-hidden flex flex-col items-center justify-center">
       
@@ -37,7 +42,8 @@ export function CtaSection() {
             <div className="absolute -inset-2 rounded-full bg-primary/20 blur-xl transition-all duration-500 group-hover:bg-primary/40 group-hover:blur-2xl"></div>
             
             <a 
-              href="#roles" 
+              href="#roles"
+              onClick={(e) => handleScroll(e, "#roles")}
               className="relative inline-flex h-16 sm:h-20 overflow-hidden rounded-full p-[2px] transition-transform duration-300 group-hover:scale-105 shadow-2xl"
             >
               {/* Spinning conic gradient border effect */}
